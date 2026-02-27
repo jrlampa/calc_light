@@ -48,6 +48,48 @@ def seed_db():
     )
     """)
     
+    # Novas tabelas para o CRUD de Projetos (Fase 2)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS project_nodes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER,
+        pole_id INTEGER,
+        label TEXT,
+        pos_x REAL DEFAULT 0.0,
+        pos_y REAL DEFAULT 0.0,
+        effort_dan REAL DEFAULT 0.0,
+        FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY(pole_id) REFERENCES poles(id)
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS node_span_configs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_node_id INTEGER,
+        target_node_id INTEGER,
+        mt_conductor_id INTEGER,
+        mt_sag_m REAL DEFAULT 0.0,
+        bt_conductor_id INTEGER,
+        bt_sag_m REAL DEFAULT 0.0,
+        span_length_m REAL DEFAULT 0.0,
+        angle_deg REAL DEFAULT 0.0,
+        FOREIGN KEY(source_node_id) REFERENCES project_nodes(id) ON DELETE CASCADE,
+        FOREIGN KEY(target_node_id) REFERENCES project_nodes(id) ON DELETE CASCADE,
+        FOREIGN KEY(mt_conductor_id) REFERENCES conductors(id),
+        FOREIGN KEY(bt_conductor_id) REFERENCES conductors(id)
+    )
+    """)
+    
     # clear tables
     cursor.execute("DELETE FROM conductors")
     cursor.execute("DELETE FROM poles")

@@ -40,3 +40,54 @@ class CalculationResult(BaseModel):
     resultant_level_dan: float
     resultant_angle_deg: float
     traction_on_pole_dan: float
+
+# --- Modelos da Fase 2 (Projetos e Diagramas) ---
+
+class ProjectBase(BaseModel):
+    name: str
+
+class Project(ProjectBase):
+    id: Optional[int] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+class ProjectNodeBase(BaseModel):
+    project_id: int
+    pole_id: int
+    label: str
+    pos_x: float = 0.0
+    pos_y: float = 0.0
+    effort_dan: float = 0.0
+
+class ProjectNode(ProjectNodeBase):
+    id: Optional[int] = None
+
+class NodeSpanConfigBase(BaseModel):
+    source_node_id: int
+    target_node_id: int
+    mt_conductor_id: Optional[int] = None
+    mt_sag_m: float = 0.0
+    bt_conductor_id: Optional[int] = None
+    bt_sag_m: float = 0.0
+    span_length_m: float = 0.0
+    angle_deg: float = 0.0
+
+class NodeSpanConfig(NodeSpanConfigBase):
+    id: Optional[int] = None
+
+# Retorno de Topologia Híbrida (Grafo)
+class TopologyEdge(BaseModel):
+    id: str  # e.g. "e-1-2"
+    source: str
+    target: str
+    mt_label: str
+    bt_label: str
+
+class TopologyNode(BaseModel):
+    id: str
+    position: dict # { "x": float, "y": float }
+    data: dict     # { "label": str, "effort": float }
+
+class ProjectTopology(BaseModel):
+    nodes: list[TopologyNode]
+    edges: list[TopologyEdge]
