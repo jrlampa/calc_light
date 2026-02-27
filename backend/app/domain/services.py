@@ -50,20 +50,35 @@ def calculate_level_resultant(inputs: List[CalculationInput], conductors: List[C
 
     # Angle: =IF(SUM(C30:L30)=0,ROUNDUP(ATAN(SUM(C31:L31)/1)*180/PI(),0),IF(SUM(C30:L30)<0,ATAN(SUM(C31:L31)/SUM(C30:L30))*180/PI()+180,ATAN(SUM(C31:L31)/SUM(C30:L30))*180/PI()))
     if total_comp_x == 0:
-        angle = math.ceil(math.degrees(math.atan(total_comp_y)))
+        if total_comp_y == 0:
+            angle = 0.0
+        else:
+            angle = math.ceil(math.degrees(math.atan(total_comp_y)))
     elif total_comp_x < 0:
         angle = math.degrees(math.atan(total_comp_y / total_comp_x)) + 180
     else:
         angle = math.degrees(math.atan(total_comp_y / total_comp_x))
+
+    # Lever arm adjusted traction on pole
+    # Formula: Resultant * Anchorage_Height / (Pole_Height * 0.9 - 0.6 - 0.1)
+    traction_on_pole = 0.0
+    if inputs and resultant > 0:
+        pole_h = inputs[0].pole_height_m
+        anch_h = inputs[0].anchorage_height_m
+        if pole_h > 0:
+            denominator = (pole_h * 0.9) - 0.6 - 0.1
+            if denominator > 0:
+                traction_on_pole = resultant * anch_h / denominator
 
     return CalculationResult(
         total_diameter_m=round(total_diameter, 4),
         total_weight_kg_m=round(total_weight, 4),
         wind_force_x=total_wind_x,
         wind_force_y=total_wind_y,
-        traction_dan=round(traction, 2),
+        traction_dan=round(traction, 2), # traction from last calc basically, or total?
         comp_x=total_comp_x,
         comp_y=total_comp_y,
         resultant_level_dan=round(resultant, 2),
-        resultant_angle_deg=round(angle, 2)
+        resultant_angle_deg=round(angle, 2),
+        traction_on_pole_dan=round(traction_on_pole, 2)
     )

@@ -39,3 +39,4 @@ class CalculationResult(BaseModel):
     comp_y: float
     resultant_level_dan: float
     resultant_angle_deg: float
+    traction_on_pole_dan: float

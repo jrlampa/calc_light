@@ -61,3 +61,6 @@ def test_traction_mt1_level():
     
     # Spreadsheet Resultante 1º Nível should be ~308.33 daN
     assert abs(res.resultant_level_dan - 308.33) < 0.5
+
+    # Spreadsheet Tração on pole (MT1) should be ~365.81 daN
+    assert abs(res.traction_on_pole_dan - 365.81) < 0.5
