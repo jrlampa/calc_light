@@ -105,3 +105,49 @@ class ProjectRepository:
             cursor.execute("SELECT * FROM poles WHERE id = ?", (pole_id,))
             row = cursor.fetchone()
             return Pole(**dict(row)) if row else None
+
+    # --- GIS Import (Phase 16) ---
+
+    def import_nodes_atomic(self, nodes: list[ProjectNode]) -> list[ProjectNode]:
+        """Importa uma lista de nós em uma única transação atômica.
+
+        Em caso de qualquer falha, a transação é revertida (rollback) integralmente,
+        garantindo que o banco não fique com dados parcialmente importados.
+        """
+        if not nodes:
+            return []
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            result: list[ProjectNode] = []
+            for node in nodes:
+                cursor.execute(
+                    """
+                    INSERT INTO project_nodes (project_id, pole_id, label, pos_x, pos_y, effort_dan)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (node.project_id, node.pole_id, node.label, node.pos_x, node.pos_y, node.effort_dan),
+                )
+                node.id = cursor.lastrowid
+                result.append(node)
+            conn.commit()
+            return result
+
+    def get_outgoing_span_config(self, node_id: int) -> NodeSpanConfig | None:
+        """Retorna o vão de saída mais recente do nó (source_node_id = node_id).
+
+        Usado pela Lógica de Herança de Condutores: quando o usuário conecta um novo
+        nó ao nó de origem, os condutores do último vão de saída são herdados.
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT * FROM node_span_configs
+                WHERE source_node_id = ?
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (node_id,),
+            )
+            row = cursor.fetchone()
+            return NodeSpanConfig(**dict(row)) if row else None

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ReactFlow,
     Controls,
@@ -7,17 +7,20 @@ import {
     type Node,
     type Edge,
     type NodeChange,
+    type Connection,
     applyNodeChanges,
     ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
+import { Loader2, Upload } from 'lucide-react';
 import { api } from '../api';
 import { useUIStore } from '../store';
 import CustomNode, { type PoleNodeData } from './CustomNode';
 import CustomEdge, { type ConductorEdgeData } from './CustomEdge';
+import GisImportModal, { type ParsedPoint } from './GisImportModal';
 
 // ── TIPOS DA RESPOSTA DA API ─────────────────────────────────────────────
 interface ApiNode {
@@ -45,6 +48,7 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
     const { selectedNodeId, setSelectedNodeId } = useUIStore();
     const nodeTypes = useMemo(() => ({ pole: CustomNode }), []);
     const edgeTypes = useMemo(() => ({ conductors: CustomEdge }), []);
+    const queryClient = useQueryClient();
 
     // ── Fetch da topologia calculada pelo Smart Backend ──────────────────
     const { data: topology, isLoading, isError } = useQuery({
@@ -114,6 +118,59 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
             patchPosition.mutate({ nodeId: selectedNodeId, pos_x: newPos.x, pos_y: newPos.y });
         },
         [selectedNodeId, patchPosition]
+    );
+
+    // ── Herança de Condutores: ao conectar A→B herda cabos do vão de saída de A ─
+    const onConnect = useCallback(
+        async (params: Connection) => {
+            if (!params.source || !params.target) return;
+            const sourceId = parseInt(params.source, 10);
+            const targetId = parseInt(params.target, 10);
+            if (isNaN(sourceId) || isNaN(targetId)) return;
+
+            // Buscar condutores do vão de saída do nó origem
+            let mtConductorId: number | null = null;
+            let mtSagM = 0.0;
+            let btConductorId: number | null = null;
+            let btSagM = 0.0;
+            let inherited = false;
+
+            try {
+                const res = await api.get(`/projects/${projectId}/nodes/${sourceId}/outgoing-conductors`);
+                const conds = res.data;
+                if (conds.mt_conductor_id || conds.bt_conductor_id) {
+                    mtConductorId = conds.mt_conductor_id;
+                    mtSagM = conds.mt_sag_m ?? 0.0;
+                    btConductorId = conds.bt_conductor_id;
+                    btSagM = conds.bt_sag_m ?? 0.0;
+                    inherited = true;
+                }
+            } catch { /* sem herança disponível — continua sem cabos */ }
+
+            try {
+                await api.post(`/projects/${projectId}/edges`, {
+                    source_node_id: sourceId,
+                    target_node_id: targetId,
+                    mt_conductor_id: mtConductorId,
+                    mt_sag_m: mtSagM,
+                    bt_conductor_id: btConductorId,
+                    bt_sag_m: btSagM,
+                    span_length_m: 50.0,
+                    angle_deg: 0.0,
+                });
+
+                if (inherited) {
+                    toast.success('Vão criado com condutores herdados automaticamente!');
+                } else {
+                    toast('Vão criado. Configure os condutores na aba de Dados.', { icon: '🔌' });
+                }
+
+                queryClient.invalidateQueries({ queryKey: ['topology', projectId] });
+            } catch {
+                toast.error('Erro ao criar vão. Verifique se os postes são do mesmo projeto.');
+            }
+        },
+        [projectId, queryClient]
     );
 
     // ── Atalhos de teclado — Nudge (setas direcionais) ───────────────────
@@ -199,6 +256,7 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onNodeDragStop={onNodeDragStop}
+            onConnect={onConnect}
             onNodeClick={(_event, node) => {
                 const nodeId = parseInt(node.id, 10);
                 if (!isNaN(nodeId)) {
@@ -240,6 +298,38 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
 // ── COMPONENTE PÚBLICO ───────────────────────────────────────────────────
 export default function TopologyDiagram() {
     const { selectedProjectId } = useUIStore();
+    const queryClient = useQueryClient();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [parsedPoints, setParsedPoints] = useState<ParsedPoint[]>([]);
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [isParsing, setIsParsing] = useState(false);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !selectedProjectId) return;
+        setIsParsing(true);
+        try {
+            const form = new FormData();
+            form.append('file', file);
+            const res = await api.post(`/projects/${selectedProjectId}/parse-file`, form);
+            if (!res.data.length) {
+                toast.warning('Nenhum ponto encontrado no arquivo.');
+            } else {
+                setParsedPoints(res.data);
+                setShowImportModal(true);
+            }
+        } catch (err: unknown) {
+            const axErr = err as { response?: { data?: { detail?: string } } };
+            toast.error(axErr?.response?.data?.detail ?? 'Erro ao processar arquivo GIS.');
+        } finally {
+            setIsParsing(false);
+            e.target.value = '';
+        }
+    };
+
+    const handleImported = () => {
+        queryClient.invalidateQueries({ queryKey: ['topology', selectedProjectId] });
+    };
 
     if (!selectedProjectId) {
         return (
@@ -254,13 +344,48 @@ export default function TopologyDiagram() {
     }
 
     return (
-        <div
-            className="w-full rounded-2xl overflow-hidden border border-white/60 shadow-xl bg-slate-50/80"
-            style={{ minHeight: '620px', height: '70vh' }}
-        >
-            <ReactFlowProvider>
-                <TopologyCanvas projectId={selectedProjectId} />
-            </ReactFlowProvider>
-        </div>
+        <>
+            <div
+                className="relative w-full rounded-2xl overflow-hidden border border-white/60 shadow-xl bg-slate-50/80"
+                style={{ minHeight: '620px', height: '70vh' }}
+            >
+                {/* ── Botão Importar GIS (overlay) ────────────────────── */}
+                <div className="absolute top-3 right-3 z-10">
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isParsing}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-white/60 bg-white/50 backdrop-blur-md shadow-sm text-blue-700 hover:bg-white/70 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                        title="Importar postes de arquivo GIS (.kml, .kmz, .geojson, .xlsx)"
+                        aria-label="Importar arquivo GIS"
+                    >
+                        {isParsing
+                            ? <Loader2 size={13} className="animate-spin" />
+                            : <Upload size={13} />
+                        }
+                        {isParsing ? 'Processando...' : 'Importar GIS'}
+                    </button>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        accept=".kml,.kmz,.geojson,.json,.xlsx,.xls"
+                        onChange={handleFileChange}
+                    />
+                </div>
+
+                <ReactFlowProvider>
+                    <TopologyCanvas projectId={selectedProjectId} />
+                </ReactFlowProvider>
+            </div>
+
+            {showImportModal && (
+                <GisImportModal
+                    projectId={selectedProjectId}
+                    points={parsedPoints}
+                    onClose={() => setShowImportModal(false)}
+                    onImported={handleImported}
+                />
+            )}
+        </>
     );
 }

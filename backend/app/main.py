@@ -4,9 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Routers modulares (Arquitetura DDD - Fase 3+)
-from app.api.routers import calculations, catalogs, forces, projects, topology
+from app.api.routers import calculations, catalogs, forces, gis, projects, topology
 
-APP_VERSION = "0.14.0"
+APP_VERSION = "0.16.0"
 
 app = FastAPI(
     title="CACL LIGHT API",
@@ -38,6 +38,7 @@ app.add_middleware(
 # Registro dos routers — nenhuma lógica de negócio aqui (Smart Backend, DDD)
 app.include_router(catalogs.router)
 app.include_router(projects.router)
+app.include_router(gis.router)
 app.include_router(calculations.router)
 app.include_router(topology.router)
 app.include_router(forces.router)
