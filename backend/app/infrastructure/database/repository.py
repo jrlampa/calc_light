@@ -1,6 +1,6 @@
 import sqlite3
 
-from app.domain.models import NodeSpanConfig, Project, ProjectNode
+from app.domain.models import NodeSpanConfig, Pole, Project, ProjectNode
 
 
 class ProjectRepository:
@@ -98,3 +98,10 @@ class ProjectRepository:
             """, (project_id,))
             rows = cursor.fetchall()
             return [NodeSpanConfig(**dict(row)) for row in rows]
+
+    def get_pole(self, pole_id: int) -> Pole | None:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM poles WHERE id = ?", (pole_id,))
+            row = cursor.fetchone()
+            return Pole(**dict(row)) if row else None

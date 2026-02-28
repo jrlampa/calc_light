@@ -1,7 +1,9 @@
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 
 from app.api.dependencies import get_repository
+from app.domain.excel_exporter import build_export_zip
 from app.domain.models import NodeSpanConfig as DomainNodeSpanConfig
 from app.domain.models import Project as DomainProject
 from app.domain.models import ProjectNode as DomainProjectNode
@@ -59,3 +61,38 @@ def update_node_position(
     if not updated:
         raise HTTPException(status_code=404, detail="Nó não encontrado")
     return updated
+
+@router.get("/{project_id}/export/excel", tags=["Export"])
+def export_project_excel(project_id: int, repo: ProjectRepository = Depends(get_repository)):
+    """Gera e devolve um ZIP mestre com um arquivo .xlsm por poste do projeto.
+
+    Lotes de até 30 arquivos são agrupados em pastas Lote_01/, Lote_02/, etc.
+    """
+    project = repo.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Projeto não encontrado")
+
+    nodes = repo.get_project_nodes(project_id)
+    if not nodes:
+        raise HTTPException(status_code=422, detail="Projeto não possui postes cadastrados")
+
+    postes_data = []
+    for idx, node in enumerate(nodes, start=1):
+        pole = repo.get_pole(node.pole_id) if node.pole_id else None
+        postes_data.append({
+            "projeto": project.name,
+            "ponto": idx,
+            "tipo_poste": pole.type_name if pole else node.label,
+            "modelo_poste": (
+                f"{pole.height_m} m / {int(pole.resistance_dan)} daN"
+                if pole else node.label
+            ),
+        })
+
+    zip_bytes = build_export_zip(postes_data)
+    filename = f"projeto_{project_id}_export.zip"
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

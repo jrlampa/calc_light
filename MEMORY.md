@@ -4,6 +4,8 @@
 
 O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado para substituir planilhas complexas de engenharia elétrica (como "CÁLCULO DE TRAÇÃO OII-25-2249.xlsm" e "POSTE69.xlsm"). O objetivo é realizar o cálculo de esforços mecânicos em postes de distribuição de energia, garantindo precisão idêntica à planilha original.
 
+**Versão atual:** `0.14.0` (Fase 14)
+
 ## Regras e Arquitetura (Não Negociáveis)
 
 1. **Branch:** Apenas `dev`.
@@ -18,6 +20,54 @@ O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado
 8. **Infraestrutura:** Docker First. Manter `.gitignore`, `.dockerignore` e `docker-compose.yml` atualizados.
 9. **BIM:** Integração Half-way BIM na geração de arquivos .dxf (via accoreconsole.exe de modo headless para testes).
 
+## Árvore de Pastas Padronizada (Fase 14)
+
+```
+calc_light/
+├── MEMORY.md                          ← RAG do projeto (este arquivo)
+├── backend/
+│   ├── app/
+│   │   ├── main.py                    ← FastAPI entry-point; APP_VERSION = "0.14.0"
+│   │   ├── templates/
+│   │   │   └── modelo.xlsm            ← Planilha modelo (keep_vba=True)
+│   │   ├── domain/
+│   │   │   ├── excel_mapping.py       ← Dicionário estrito de células de entrada
+│   │   │   ├── excel_exporter.py      ← Motor de exportação ZIP em lotes
+│   │   │   ├── calculators.py
+│   │   │   ├── models.py
+│   │   │   └── topology_service.py
+│   │   ├── api/
+│   │   │   ├── routers/
+│   │   │   │   ├── projects.py        ← Inclui GET /{id}/export/excel
+│   │   │   │   ├── calculations.py
+│   │   │   │   ├── catalogs.py
+│   │   │   │   ├── forces.py
+│   │   │   │   └── topology.py
+│   │   │   └── dependencies.py
+│   │   ├── infrastructure/
+│   │   │   └── database/
+│   │   │       ├── database.py
+│   │   │       └── repository.py
+│   │   ├── schemas/
+│   │   │   ├── projects.py
+│   │   │   ├── catalogs.py
+│   │   │   └── topology.py
+│   │   └── tests/
+│   │       ├── test_api.py
+│   │       ├── test_excel_export.py   ← 22 testes paranóicos (35 postes, lotes, células)
+│   │       ├── test_calculators.py
+│   │       ├── test_database.py
+│   │       └── test_topology.py
+│   └── requirements.txt
+├── frontend/
+│   ├── package.json                   ← version: "0.14.0"
+│   └── src/
+│       ├── api.ts                     ← downloadProjectExcel()
+│       ├── App.tsx                    ← Botão "Exportar Excel" (Glassmorphism)
+│       └── components/
+└── database/
+```
+
 ## Domínio de Negócio (Cálculo de Tração)
 
 A lógica principal de cálculo envolve Níveis (MT1, MT2, BT, Ramais) e Tramos (T1 a T4). As fórmulas extraídas da planilha são:
@@ -26,6 +76,38 @@ A lógica principal de cálculo envolve Níveis (MT1, MT2, BT, Ramais) e Tramos 
 - **Decomposição:** Tração decomposta em `Compx` e `Compy` de acordo com o ângulo do vão.
 - **Resultante por Nível:** Soma vetorial das trações + Soma vetorial das forças de vento.
 - **Resultante aplicada ao Poste:** Ajustada pelos momentos de alavanca (Altura Ancoragem / Altura Útil do Poste).
+
+## Dicionário de Mapeamento de Células (excel_mapping.py)
+
+Planilha alvo: `Ponto (1)` no `modelo.xlsm`.  Apenas inputs brutos; cálculos ficam com a planilha.
+
+| Campo                     | Célula | Descrição                          |
+|---------------------------|--------|------------------------------------|
+| `orgao`                   | C1     | Órgão (ex: "OMET")                |
+| `projeto`                 | H1     | Nome do projeto                    |
+| `ponto`                   | K1     | Número sequencial do ponto/poste   |
+| `data`                    | K3     | Data do estudo                     |
+| `tipo_poste`              | C7     | Tipo do Poste                      |
+| `modelo_poste`            | C8     | Modelo do Poste (ex: "11 m / 300 daN") |
+| `mt1_t1_rede`             | C12    | MT 1º Nível – T1 – Tipo de rede   |
+| `mt1_t1_cabo`             | C13    | MT 1º Nível – T1 – Tipo de cabo   |
+| `mt1_t1_vao`              | C14    | MT 1º Nível – T1 – Vão (m)        |
+| `mt1_t1_flecha`           | C15    | MT 1º Nível – T1 – Flecha (m)     |
+| `mt1_t1_angulo`           | C16    | MT 1º Nível – T1 – Ângulo (°)     |
+| `mt1_altura_poste`        | C17    | MT 1º Nível – Altura do poste (m) |
+| `mt1_altura_ancoragem`    | C18    | MT 1º Nível – Altura ancoragem (m)|
+| `mt1_t2_*` … `mt1_t4_*`  | F12-L16| MT 1º Nível – Tramos 2, 3 e 4     |
+| `mt2_t1_*` … `mt2_t4_*`  | C38-L42| MT 2º Nível                        |
+| `bt_t1_*` … `bt_t4_*`    | C64-L68| BT                                 |
+
+## Motor de Exportação em Lotes (excel_exporter.py)
+
+- **`BATCH_SIZE = 30`**: máximo de arquivos por lote.
+- **`build_poste_xlsm(data, template_path)`**: gera bytes de um único `.xlsm` com os dados injetados.
+- **`build_export_zip(postes_data, template_path)`**: gera ZIP mestre.
+  - ≤ 30 postes → arquivos na raiz (`poste_01.xlsm`, …).
+  - > 30 postes → subpastas `Lote_01/`, `Lote_02/`, … com até 30 arquivos cada.
+- **Endpoint:** `GET /projects/{id}/export/excel` → `application/zip`.
 
 ## Equipe (Roles)
 

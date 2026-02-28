@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, X, Download } from 'lucide-react';
 import { useUIStore } from './store';
 import { FileText, Activity, Network, Plus, FolderOpen } from 'lucide-react';
 import TractionCalculator from './components/TractionCalculator';
@@ -10,7 +10,7 @@ import TopologyDiagram from './components/TopologyDiagram';
 import ForceDiagram from './components/ForceDiagram';
 import Layout from './components/Layout';
 import ShortcutsModal from './components/ShortcutsModal';
-import { api } from './api';
+import { api, downloadProjectExcel } from './api';
 
 // ── MODAL DE NOVO PROJETO ────────────────────────────────────────────────
 function NewProjectModal({ onConfirm, onClose }: { onConfirm: (name: string) => void; onClose: () => void }) {
@@ -73,6 +73,7 @@ function App() {
 
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Fetch Projects List
   const { data: projects = [], isLoading } = useQuery({
@@ -260,6 +261,29 @@ function App() {
               >
                 <Network size={18} /> Unifilar Topológico
                 <span className="ml-1 text-[10px] opacity-50 font-normal">Alt+3</span>
+              </button>
+
+              {/* ── Botão de Exportação Excel (Glassmorphism) ─────────────── */}
+              <button
+                onClick={async () => {
+                  if (!selectedProjectId) return;
+                  setIsExporting(true);
+                  try {
+                    await downloadProjectExcel(selectedProjectId);
+                    toast.success('Exportação concluída! Verifique seus downloads.');
+                  } catch {
+                    toast.error('Erro ao exportar planilhas. Tente novamente.');
+                  } finally {
+                    setIsExporting(false);
+                  }
+                }}
+                disabled={isExporting}
+                className="ml-auto flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border border-white/60 bg-white/30 backdrop-blur-md shadow-md shadow-blue-200/30 text-blue-700 hover:bg-white/50 hover:shadow-blue-300/40 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                title="Exportar planilhas Excel (.xlsm) para todos os postes do projeto"
+                aria-label="Exportar planilhas Excel"
+              >
+                <Download size={16} className={isExporting ? 'animate-bounce' : ''} />
+                {isExporting ? 'Exportando…' : 'Exportar Excel'}
               </button>
             </div>
 
