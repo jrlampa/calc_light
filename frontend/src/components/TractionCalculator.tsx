@@ -125,11 +125,11 @@ export default function TractionCalculator() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-600 mb-1">Posição X</label>
-                            <input type="number" step="0.1" {...nodeForm.register("pos_x")} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2" />
+                            <input type="number" step="0.1" {...nodeForm.register("pos_x")} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-600 mb-1">Posição Y</label>
-                            <input type="number" step="0.1" {...nodeForm.register("pos_y")} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2" />
+                            <input type="number" step="0.1" {...nodeForm.register("pos_y")} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700" />
                         </div>
                     </div>
 
@@ -189,14 +189,14 @@ export default function TractionCalculator() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-medium text-slate-500 mb-1">Condutor</label>
-                                <select {...spanForm.register("mt_conductor_id")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm">
+                                <select {...spanForm.register("mt_conductor_id")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm text-slate-700">
                                     <option value="">Sem Condutor MT</option>
                                     {conductors.filter(c => c.name.includes("MT")).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-slate-500 mb-1">Flecha (m)</label>
-                                <input type="number" step="0.01" {...spanForm.register("mt_sag_m")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm" />
+                                <input type="number" step="0.01" {...spanForm.register("mt_sag_m")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm text-slate-700" />
                             </div>
                         </div>
                     </div>
@@ -206,14 +206,14 @@ export default function TractionCalculator() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-medium text-slate-500 mb-1">Condutor</label>
-                                <select {...spanForm.register("bt_conductor_id")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm">
+                                <select {...spanForm.register("bt_conductor_id")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm text-slate-700">
                                     <option value="">Sem Condutor BT</option>
                                     {conductors.filter(c => c.name.includes("BT")).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-slate-500 mb-1">Flecha (m)</label>
-                                <input type="number" step="0.01" {...spanForm.register("bt_sag_m")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm" />
+                                <input type="number" step="0.01" {...spanForm.register("bt_sag_m")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm text-slate-700" />
                             </div>
                         </div>
                     </div>
@@ -221,11 +221,11 @@ export default function TractionCalculator() {
                     <div className="grid grid-cols-2 gap-4 pt-2">
                         <div>
                             <label className="block text-sm font-medium text-slate-600 mb-1">Distância do Vão (m)</label>
-                            <input type="number" step="0.1" {...spanForm.register("span_length_m", { required: true })} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2" />
+                            <input type="number" step="0.1" {...spanForm.register("span_length_m", { required: true })} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-600 mb-1">Ângulo Deflexão (°)</label>
-                            <input type="number" step="1" {...spanForm.register("angle_deg", { required: true })} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2" />
+                            <input type="number" step="1" {...spanForm.register("angle_deg", { required: true })} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700" />
                         </div>
                     </div>
 
