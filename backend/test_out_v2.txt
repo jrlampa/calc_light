@@ -5,7 +5,8 @@ rootdir: C:\CALC_LIGHT\backend
 plugins: anyio-4.12.1, cov-7.0.0
 collecting ... collected 2 items
 
-app/tests/test_auditor.py::test_audit_ponto_1 Added t1: 1/0AWG-CAA, XLPE, 13,8 kV (Angle: 0)
+app/tests/test_auditor.py::test_audit_ponto_1 DEBUG: Conductors in map: ['556MCM-CA, Nu', '397MCM-CA, Nu', '1/0AWG-CAA, Nu', '4 AWG-CAA, Nu', '397MCM-CA, XLPE, 34,5 kV']... (Total: 33)
+Added t1: 1/0AWG-CAA, XLPE, 13,8 kV (Angle: 0)
 Added t2: 1/0AWG-CAA, XLPE, 13,8 kV (Angle: 180)
 Resultant Calc: 9.67 vs Expected: 308.33000000000004
 FAILED
@@ -14,13 +15,14 @@ app/tests/test_auditor.py::test_audit_all_points FAILED
 ================================== FAILURES ===================================
 _____________________________ test_audit_ponto_1 ______________________________
 
-importer = <app.scripts.legacy_importer.LegacyImporter object at 0x0000014622F0E240>
+importer = <app.scripts.legacy_importer.LegacyImporter object at 0x000001C4CB437560>
 conductors_map = {'1/0-AWG, MTX-BT ': Conductor(id=None, name='1/0-AWG, MTX-BT ', diameter_m=0.0255, weight_kg_m=0.834, cable_qty=1, ne...=0.017, weight_kg_m=0.37, cable_qty=1, network_type='Convencional', messenger_weight=0.0, messenger_diameter=0.0), ...}
 
     def test_audit_ponto_1(importer, conductors_map):
         """
         Auditoria do Ponto (1): Compara Resultante MT1 e Resultante Total.
         """
+        print(f"DEBUG: Conductors in map: {list(conductors_map.keys())[:5]}... (Total: {len(conductors_map)})")
         sheet_data = importer.extract_node_data("Ponto (1)")
         inputs_excel = sheet_data["inputs"]["mt1"]
         expected = sheet_data["expected_results"]
@@ -61,10 +63,10 @@ E         comparison failed
 E         Obtained: 9.67
 E         Expected: 308.33000000000004 ± 3.1e-01
 
-app\tests\test_auditor.py:85: AssertionError
+app\tests\test_auditor.py:86: AssertionError
 ____________________________ test_audit_all_points ____________________________
 
-importer = <app.scripts.legacy_importer.LegacyImporter object at 0x0000014622F0E240>
+importer = <app.scripts.legacy_importer.LegacyImporter object at 0x000001C4CB437560>
 conductors_map = {'1/0-AWG, MTX-BT ': Conductor(id=None, name='1/0-AWG, MTX-BT ', diameter_m=0.0255, weight_kg_m=0.834, cable_qty=1, ne...=0.017, weight_kg_m=0.37, cable_qty=1, network_type='Convencional', messenger_weight=0.0, messenger_diameter=0.0), ...}
 
     def test_audit_all_points(importer, conductors_map):
@@ -107,7 +109,7 @@ E                 comparison failed
 E                 Obtained: 9.67
 E                 Expected: 308.33000000000004 ± 3.1e+00
 
-app\tests\test_auditor.py:131: AssertionError
+app\tests\test_auditor.py:132: AssertionError
 ============================== warnings summary ===============================
 app/tests/test_auditor.py::test_audit_ponto_1
   C:\CALC_LIGHT\backend\.venv\Lib\site-packages\openpyxl\worksheet\_reader.py:329: UserWarning: Data Validation extension is not supported and will be removed
@@ -117,4 +119,4 @@ app/tests/test_auditor.py::test_audit_ponto_1
 =========================== short test summary info ===========================
 FAILED app/tests/test_auditor.py::test_audit_ponto_1 - assert 9.67 == 308.330...
 FAILED app/tests/test_auditor.py::test_audit_all_points - assert 9.67 == 308....
-======================== 2 failed, 1 warning in 0.80s =========================
+======================== 2 failed, 1 warning in 0.71s =========================

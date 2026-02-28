@@ -3,7 +3,7 @@ import { useUIStore } from './store';
 import { FileText, Activity, Network, Plus, FolderOpen } from 'lucide-react';
 import TractionCalculator from './components/TractionCalculator';
 import TopologyDiagram from './components/TopologyDiagram';
-import ForcesDiagram from './components/ForcesDiagram';
+import ForceDiagram from './components/ForceDiagram';
 import Layout from './components/Layout';
 import { api } from './api';
 
@@ -122,7 +122,7 @@ function App() {
             )}
             {activeTab === 'forces' && (
               <div className="h-full w-full animate-in fade-in duration-300">
-                <ForcesDiagram />
+                <ForceDiagram />
               </div>
             )}
             {activeTab === 'topology' && (

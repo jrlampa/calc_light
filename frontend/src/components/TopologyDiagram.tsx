@@ -37,6 +37,7 @@ interface ApiEdge {
 
 // ── COMPONENTE INTERNO (dentro do ReactFlowProvider) ─────────────────────
 function TopologyCanvas({ projectId }: { projectId: number }) {
+    const { setSelectedNodeId } = useUIStore();
     const nodeTypes = useMemo(() => ({ pole: CustomNode }), []);
     const edgeTypes = useMemo(() => ({ conductors: CustomEdge }), []);
 
@@ -155,6 +156,10 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onNodeDragStop={onNodeDragStop}
+            onNodeClick={(_event, node) => {
+                const nodeId = parseInt(node.id, 10);
+                if (!isNaN(nodeId)) setSelectedNodeId(nodeId);
+            }}
             onNodesChange={(changes: NodeChange<Node<PoleNodeData>>[]) => {
                 setLocalNodes(prev => applyNodeChanges(changes, prev));
             }}

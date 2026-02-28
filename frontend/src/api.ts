@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Utiliza a variável de ambiente VITE_API_URL, ou fallback para localhost na porta 8000
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 
 export const api = axios.create({
     baseURL: API_URL,
