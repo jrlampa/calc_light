@@ -2,9 +2,9 @@
 
 ## Contexto do Projeto
 
-O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado para substituir planilhas complexas de engenharia elétrica (como "CÁLCULO DE TRAÇÃO OII-25-2249.xlsm" e "POSTE69.xlsm"). O objetivo é realizar o cálculo de esforços mecânicos em postes de distribuição de energia, garantindo precisão idêntica à planilha original.
+O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado para substituir planilhas complexas de engenharia elétrica. O objetivo é realizar o cálculo de esforços mecânicos em postes de distribuição de energia, garantindo precisão idêntica à planilha original.
 
-**Versão atual:** `0.17.0` (Fase 17 — Solver Global / Motor de Otimização)
+**Versão atual:** `0.20.0` (Fase 20 — Auditoria Final, Refatoração Pré-Deploy e Consolidação)
 
 ## Regras e Arquitetura (Não Negociáveis)
 
@@ -14,73 +14,100 @@ O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado
 4. **Arquitetura (DDD):**
    - **Smart Backend:** Python FastAPI com as regras de negócio bem isoladas (`domain`), recebendo e devolvendo DTOs.
    - **Thin Frontend:** React + Vite, responsável apenas por renderizar o estado e enviar comandos.
-5. **Boas Práticas:** Modularidade, Responsabilidade Única, Segurança (Sanitização) e Clean Code.
+5. **Boas Práticas:** Modularidade, Responsabilidade Única (Regra dos 500 linhas), Segurança (Sanitização) e Clean Code.
 6. **Zero Custo:** Uso exclusivo de APIs e bibliotecas públicas gratuitas.
-7. **Testes:** 100% de cobertura nos 20% críticos (cálculos de tração) e >80% no restante. Testes Unitários e E2E. Execução sempre que julgar necessário.
-8. **Infraestrutura:** Docker First. Manter `.gitignore`, `.dockerignore` e `docker-compose.yml` atualizados.
-9. **BIM:** Integração Half-way BIM na geração de arquivos .dxf (via accoreconsole.exe de modo headless para testes).
+7. **Testes:** 100% de cobertura nos 20% críticos (`domain/`) e >80% no restante. Testes Unitários e E2E.
+8. **Infraestrutura:** Docker First (multi-stage Dockerfile, `docker-compose.yml`, `.dockerignore` atualizados).
+9. **BIM:** Half-way BIM na modelagem relacional dos postes e equipamentos.
 
-## Árvore de Pastas Padronizada (Fase 17)
+## Árvore de Pastas Padronizada (Fase 20)
 
 ```
 calc_light/
 ├── MEMORY.md                          ← RAG do projeto (este arquivo)
+├── .dockerignore                      ← Excluí testes, __pycache__, .db, node_modules
+├── docker-compose.yml                 ← Prod: healthcheck, named volume db_data, nginx frontend
 ├── backend/
-│   ├── app/
-│   │   ├── main.py                    ← FastAPI entry-point; APP_VERSION = "0.17.0"
-│   │   ├── templates/
-│   │   │   └── modelo.xlsm            ← Planilha modelo (keep_vba=True)
-│   │   ├── domain/
-│   │   │   ├── gis_parser.py          ← Motor de parsing KML/KMZ/GeoJSON/Excel (100% cov)
-│   │   │   ├── excel_mapping.py       ← Dicionário estrito de células de entrada
-│   │   │   ├── excel_exporter.py      ← Motor de exportação ZIP em lotes (memory-safe)
-│   │   │   ├── calculators.py
-│   │   │   ├── models.py              ← +is_ghost: bool = False em ProjectNodeBase
-│   │   │   ├── topology_service.py    ← Ghost: skip capacity, inclui tração; is_ghost no data
-│   │   │   └── solver.py              ← Heurística de flechas + teto 2000 daN (100% cov)
-│   │   ├── api/
-│   │   │   ├── routers/
-│   │   │   │   ├── gis.py
-│   │   │   │   ├── projects.py        ← +PATCH .../ghost; export filtra is_ghost
-│   │   │   │   ├── solver.py          ← GET .../solve; POST .../solve/apply
-│   │   │   │   ├── calculations.py
-│   │   │   │   ├── catalogs.py
-│   │   │   │   ├── forces.py
-│   │   │   │   └── topology.py
-│   │   │   └── dependencies.py
-│   │   ├── infrastructure/
-│   │   │   └── database/
-│   │   │       ├── database.py        ← +_apply_migrations(): ADD COLUMN is_ghost
-│   │   │       └── repository.py      ← +set_node_ghost(), +update_span_sag(), bool cast
-│   │   ├── schemas/
-│   │   │   ├── gis.py
-│   │   │   ├── projects.py            ← +is_ghost em ProjectNodeBase; +NodeGhostUpdate
-│   │   │   ├── catalogs.py
-│   │   │   └── topology.py
-│   │   └── tests/
-│   │       ├── test_api.py
-│   │       ├── test_ghost_node.py     ← 20 testes paranóicos ghost node
-│   │       ├── test_solver.py         ← 15 testes paranóicos (100% cov em solver.py)
-│   │       ├── test_gis_parser.py
-│   │       ├── test_graph_inheritance.py
-│   │       ├── test_excel_export.py
-│   │       ├── test_calculators.py
-│   │       ├── test_database.py
-│   │       └── test_topology.py
-│   └── requirements.txt
+│   ├── Dockerfile                     ← Multi-stage (builder + runner non-root)
+│   ├── requirements.txt
+│   └── app/
+│       ├── main.py                    ← FastAPI entry-point; APP_VERSION = "0.20.0"
+│       ├── templates/
+│       │   └── modelo.xlsm            ← Planilha modelo (keep_vba=True)
+│       ├── domain/
+│       │   ├── calculators.py         ← 100% cov; extra_drag_area_m2 (Fase 19)
+│       │   ├── excel_exporter.py      ← 100% cov
+│       │   ├── excel_mapping.py       ← 100% cov
+│       │   ├── gis_parser.py          ← 100% cov
+│       │   ├── models.py              ← 100% cov; CatalogEquipment (Fase 19)
+│       │   ├── solver.py              ← 100% cov
+│       │   └── topology_service.py    ← 100% cov (Fase 20: target_node paths cobertos)
+│       ├── api/
+│       │   └── routers/
+│       │       ├── catalogs.py        ← GET /catalogs/equipment (Fase 19)
+│       │       ├── gis.py             ← >80% cov (Fase 20: test_gis_api.py)
+│       │       ├── projects.py        ← PATCH settings, GET/PUT node equipment (Fase 19)
+│       │       ├── solver.py          ← 100% cov
+│       │       ├── topology.py        ← 100% cov
+│       │       ├── calculations.py
+│       │       ├── forces.py
+│       │       └── dependencies.py
+│       ├── api/services/
+│       │   └── topology_service.py    ← Lê enable_equipment_drag, agrega áreas por nó
+│       ├── infrastructure/database/
+│       │   ├── database.py            ← _apply_migrations() idempotentes; seed equipamentos
+│       │   └── repository.py          ← update_project_settings, get_equipment_catalog,
+│       │                                 get/set_node_equipment_ids, get_node_equipment_total_area
+│       ├── schemas/
+│       │   ├── projects.py            ← enable_equipment_drag, ProjectSettingsUpdate, NodeEquipmentUpdate
+│       │   ├── catalogs.py            ← CatalogEquipmentResponse
+│       │   ├── gis.py
+│       │   └── topology.py
+│       └── tests/
+│           ├── test_api.py
+│           ├── test_equipment_drag.py ← 18 testes (Fase 19): calculators, topology, repo, API
+│           ├── test_gis_api.py        ← 13 testes (Fase 20): parse-file, import-nodes, outgoing-conductors
+│           ├── test_ghost_node.py     ← 20 testes paranóicos ghost node
+│           ├── test_solver.py         ← 15 testes (100% cov em solver.py)
+│           ├── test_gis_parser.py     ← 100% cov em gis_parser.py
+│           ├── test_graph_inheritance.py
+│           ├── test_excel_export.py
+│           ├── test_calculators.py
+│           ├── test_database.py
+│           ├── test_topology.py       ← Fase 20: target_node force vectors cobertos
+│           └── test_auditor.py
 ├── frontend/
+│   ├── Dockerfile                     ← Dev (node:18-alpine)
+│   ├── Dockerfile.prod                ← Prod multi-stage (node:20-alpine + nginx:1.27-alpine)
+│   ├── nginx.conf
 │   ├── package.json
 │   └── src/
 │       ├── api.ts
-│       ├── App.tsx
+│       ├── App.tsx                    ← <500 linhas (Fase 20): usa NewProjectModal + ProjectSidebar
+│       ├── store.ts                   ← useTopologyHistoryStore (zundo), useUIStore
+│       ├── hooks/
+│       │   ├── useCatalogs.ts         ← poles, conductors, equipment (Fase 19)
+│       │   └── useProjects.ts         ← useProjectSettings, useUpdateProjectSettings,
+│       │                                 useNodeEquipment, useSetNodeEquipment (Fase 19)
 │       └── components/
+│           ├── App.tsx-components:    ← Extraídos na Fase 20 (SRP):
+│           ├── NewProjectModal.tsx    ← Modal de criação de projeto
+│           ├── ProjectSidebar.tsx     ← Sidebar com lista de projetos
+│           ├── TopologyDiagram.tsx    ← <500 linhas (Fase 20): wrapper + GIS + Solver modais
+│           ├── TopologyCanvas.tsx     ← Extraído (Fase 20): ReactFlow canvas, undo/redo, drag, nudge
+│           ├── TractionCalculator.tsx ← <500 linhas (Fase 20): usa ProjectSettingsPanel + NodeEquipmentSelector
+│           ├── ProjectSettingsPanel.tsx ← Toggle enable_equipment_drag iOS-style (Fase 19-20)
+│           ├── NodeEquipmentSelector.tsx ← Pill multi-select de equipamentos por nó (Fase 19-20)
+│           ├── CustomNode.tsx
+│           ├── CustomEdge.tsx
+│           ├── ForceDiagram.tsx
 │           ├── GisImportModal.tsx
-│           ├── GhostNodeModal.tsx     ← Modal "Novo Poste" vs "Nó Fantasma"
-│           ├── SolverModal.tsx        ← Modal "Otimizar Rede" com alertas extremo/crítico
-│           ├── TopologyDiagram.tsx    ← +botão "Otimizar Rede" + SolverModal
-│           ├── CustomNode.tsx         ← Ghost: border-dashed, opacity-50, sem badge
+│           ├── GhostNodeModal.tsx
+│           ├── SolverModal.tsx
 │           ├── ExportButton.tsx
-│           └── __tests__/
+│           ├── Layout.tsx
+│           ├── RecoveryModal.tsx
+│           └── ShortcutsModal.tsx
 └── database/
 ```
 
@@ -93,198 +120,120 @@ A lógica principal de cálculo envolve Níveis (MT1, MT2, BT, Ramais) e Tramos 
 - **Resultante por Nível:** Soma vetorial das trações + Soma vetorial das forças de vento.
 - **Resultante aplicada ao Poste:** Ajustada pelos momentos de alavanca (Altura Ancoragem / Altura Útil do Poste).
 
-## Dicionário de Mapeamento de Células (excel_mapping.py)
+## Fase 19 — Catálogo de Equipamentos e Arrasto Adicional (opt-in)
 
-Planilha alvo: `Ponto (1)` no `modelo.xlsm`.  Apenas inputs brutos; cálculos ficam com a planilha.
+Na física real, equipamentos acoplados ao poste (Transformadores, Cruzetas, Chaves) adicionam área
+de arrasto significativa contra o vento. A concessionária Enel/Light NÃO exige esse rigor no cálculo
+padrão. Portanto, é tratado como "Modo Avançado" 100% opcional (Opt-in) por projeto.
 
-| Campo                     | Célula | Descrição                          |
-|---------------------------|--------|------------------------------------|
-| `orgao`                   | C1     | Órgão (ex: "OMET")                |
-| `projeto`                 | H1     | Nome do projeto                    |
-| `ponto`                   | K1     | Número sequencial do ponto/poste   |
-| `data`                    | K3     | Data do estudo                     |
-| `tipo_poste`              | C7     | Tipo do Poste                      |
-| `modelo_poste`            | C8     | Modelo do Poste (ex: "11 m / 300 daN") |
-| `mt1_t1_rede`             | C12    | MT 1º Nível – T1 – Tipo de rede   |
-| `mt1_t1_cabo`             | C13    | MT 1º Nível – T1 – Tipo de cabo   |
-| `mt1_t1_vao`              | C14    | MT 1º Nível – T1 – Vão (m)        |
-| `mt1_t1_flecha`           | C15    | MT 1º Nível – T1 – Flecha (m)     |
-| `mt1_t1_angulo`           | C16    | MT 1º Nível – T1 – Ângulo (°)     |
-| `mt1_altura_poste`        | C17    | MT 1º Nível – Altura do poste (m) |
-| `mt1_altura_ancoragem`    | C18    | MT 1º Nível – Altura ancoragem (m)|
-| `mt1_t2_*` … `mt1_t4_*`  | F12-L16| MT 1º Nível – Tramos 2, 3 e 4     |
-| `mt2_t1_*` … `mt2_t4_*`  | C38-L42| MT 2º Nível                        |
-| `bt_t1_*` … `bt_t4_*`    | C64-L68| BT                                 |
+### Flag `enable_equipment_drag`
+- **Tabela:** `projects.enable_equipment_drag INTEGER DEFAULT 0`
+- **Migração:** `_apply_migrations()` idempotente em `database.py`
+- **Endpoint:** `PATCH /projects/{id}/settings` → `{"enable_equipment_drag": true|false}`
 
-## Solver Global / Motor de Otimização (Fase 17)
-
-### Conceito
-O "Solver Global" é um algoritmo de otimização heurística que analisa os postes reais
-sobrecarregados e sugere ajustes nas flechas dos condutores para reduzir os esforços mecânicos.
-É um sistema "Human-in-the-loop": o motor propõe, o engenheiro decide.
-
-### Limites do Catálogo (Não Negociáveis)
-| Parâmetro | Valor |
+### Catálogo Estático `catalog_equipment`
+| Nome | Área Arrasto (m²) |
 |---|---|
-| Mínimo catálogo | 300 daN |
-| Teto estrutural absoluto | **2 000 daN** |
-| Flecha padrão | 0,5 m |
-| Range padrão | 0,3 m a 0,9 m (step 0,1) |
-| Range extremo | 1,0 m a 1,3 m (step 0,1) |
+| Trafo 45 kVA | 0.85 |
+| Trafo 75 kVA | 1.05 |
+| Trafo 112,5 kVA | 1.25 |
+| Cruzeta Polimérica 2,0 m | 0.30 |
+| Cruzeta Metálica 2,4 m | 0.40 |
+| Chave Faca MT | 0.15 |
+| Chave a Óleo MT | 0.20 |
+
+### Tabela `node_equipment` (join)
+`(node_id, equipment_id)` — PRIMARY KEY composta, CASCADE DELETE.
+
+### Motor Matemático Condicional (`calculators.py`)
+- `calculate_level_resultant(inputs, conductors, extra_drag_area_m2=0.0)`
+- Quando `enable_equipment_drag=False`: `extra_drag_area_m2` é sempre 0 (padrão Enel)
+- Quando `enable_equipment_drag=True`: `extra_drag_area_m2 = soma das áreas dos equipamentos do nó`
+- Aplicado apenas no primeiro nível (representa o poste uma única vez)
+- Conversão: `equipament_wind_area = area / (span_m / 2)` → somado ao diâmetro do poste
+
+### API Fase 19
+| Rota | Método | Descrição |
+|---|---|---|
+| `GET /catalogs/equipment` | GET | Catálogo estático de equipamentos |
+| `PATCH /projects/{id}/settings` | PATCH | Toggle enable_equipment_drag |
+| `GET /projects/{id}/nodes/{nid}/equipment` | GET | IDs de equipamentos acoplados ao nó |
+| `PUT /projects/{id}/nodes/{nid}/equipment` | PUT | Substitui lista de equipamentos do nó |
+
+### Frontend Fase 19
+- **`ProjectSettingsPanel.tsx`** — Toggle iOS-style + tooltip "Ative apenas se exigido pela concessionária..."
+- **`NodeEquipmentSelector.tsx`** — Pill multi-select por nó; mostra área total acumulada
+- Nós na lista clicáveis quando modo avançado ativo → abre seletor de equipamentos
+
+## Fase 17 — Solver Global / Motor de Otimização
 
 ### Algoritmo (solver.py → run_solver)
 ```
 Para cada nó REAL (is_ghost=False):
-  1. Calcula esforço atual via _compute_effort() (usa calculate_level_resultant)
+  1. Calcula esforço atual via _compute_effort()
   2. threshold = min(nominal_capacity, 2000 daN)
   3. Se esforço <= threshold → poste OK, skip
   4. Se sobrecarregado:
-     a. Tenta range padrão (0.3–0.9 m): primeiro sag que baixa para ≤ 2000 daN
-        → SolverSuggestion(is_extreme=False)
-     b. Tenta range extremo (1.0–1.3 m): idem
-        → SolverSuggestion(is_extreme=True)  + ⚠️ aviso de altura do cabo
-     c. Se nada funcionar:
-        → SolverSuggestion(requires_span_break=True) 🚨
+     a. Range padrão (0.3–0.9 m) → SolverSuggestion(is_extreme=False)
+     b. Range extremo (1.0–1.3 m) → SolverSuggestion(is_extreme=True)
+     c. Nada funcionar → SolverSuggestion(requires_span_break=True)
 ```
 
-### Regra de Quebra de Vão (Span Break)
-Se o esforço **ultrapassa 2 000 daN e NENHUMA flecha** (mesmo 1,3 m) consegue trazer
-o esforço para ≤ 2 000 daN, o solver **não pode resolver via flecha** e retorna:
-```json
-{"node_id": 5, "current_effort": 2450.0, "requires_span_break": true,
- "message": "Esforço de 2450.0 daN superior a 2000 daN. Impossível resolver via flecha. Necessária quebra de vão."}
-```
-O engenheiro deve adicionar um poste intermediário para dividir o vão.
+## Nó Fantasma (Ghost Node)
 
-### API
-| Rota | Método | Descrição |
-|---|---|---|
-| `/projects/{id}/solve` | GET | Executa heurística, retorna `SolverReportOut` |
-| `/projects/{id}/solve/apply` | POST | Aplica sugestões selecionadas ao banco |
+- **Flag:** `project_nodes.is_ghost INTEGER DEFAULT 0`
+- Ghost contribui com tração no nó real via vão compartilhado
+- Ghost NÃO tem `effort_dan`, `utilization_percent`, `is_overloaded` calculados (todos 0/False)
+- Ghost aparece no diagrama (borda tracejada, opacidade 50%, sem badge de esforço)
+- **API:** `PATCH /projects/{id}/nodes/{nid}/ghost` → `{"is_ghost": true|false}`
+- Export Excel filtra `is_ghost=True` (ghost não entra no ZIP)
 
-### Frontend (SolverModal.tsx)
-- Botão "⚡ Otimizar Rede" na Tab 3 (overlay do canvas)
-- Modal 2.5D com tabela de sugestões
-- Linha **branca/índigo**: solvable no range padrão — checkbox habilitado
-- Linha **amarela ⚠️**: solvable no range extremo — checkbox habilitado + aviso de altura
-- Linha **vermelha 🚨**: requires_span_break — checkbox **desabilitado** + instrução clara
-- "Aplicar Sugestões": aplica apenas os selecionados que são solvable
+## Fase 18 — Zero Data Loss (Auto-Save / Undo-Redo / Disaster Recovery)
 
-### Testes (test_solver.py — 100% cobertura em solver.py)
-| # | Cenário |
+- **Auto-save:** `localStorage.setItem('cacl_backup_{id}', JSON)` debounced 1.5s após mudança
+- **Undo/Redo:** `zundo` temporal middleware no `useTopologyHistoryStore`, limite=50
+- **Hotkeys:** `Ctrl+Z` (undo), `Ctrl+Y` / `Ctrl+Shift+Z` (redo)
+- **Disaster Recovery:** `RecoveryModal` — ao abrir projeto compara `localStorage.savedAt` vs servidor
+
+## Fase 20 — Auditoria Final e Consolidação
+
+### Regra dos 500 Linhas — Arquivos Refatorados
+| Arquivo | Antes | Depois | Extraídos |
+|---|---|---|---|
+| `App.tsx` | 508 | 413 | `NewProjectModal.tsx`, `ProjectSidebar.tsx` |
+| `TractionCalculator.tsx` | 521 | 368 | `ProjectSettingsPanel.tsx`, `NodeEquipmentSelector.tsx` |
+| `TopologyDiagram.tsx` | 561 | 120 | `TopologyCanvas.tsx` |
+
+### Cobertura de Testes (Pareto 80/20)
+| Camada | Cobertura |
 |---|---|
-| 1 | Poste normal → sem sugestão |
-| 2 | Sobrecarregado → resolvido no range padrão (is_extreme=False) |
-| 3 | Sobrecarregado → resolvido apenas no range extremo (is_extreme=True) |
-| 4 | Tração absurda → requires_span_break=True |
-| 5 | Ghost node → ignorado pelo solver |
-| 6 | Nó sem vãos → esforço=0, sem sugestão |
-| 7 | Múltiplos nós com mix de cenários |
-| 8-15 | API: 404, projeto vazio, apply com e sem vãos |
+| `domain/calculators.py` | **100%** |
+| `domain/excel_exporter.py` | **100%** |
+| `domain/gis_parser.py` | **100%** |
+| `domain/solver.py` | **100%** |
+| `domain/models.py` | **100%** |
+| `domain/topology_service.py` | **100%** (Fase 20: target_node paths) |
+| Total domain | **98%+ → 100%** |
+| `api/routers/gis.py` | **~37% → >80%** (Fase 20: `test_gis_api.py`) |
+| Aplicação completa | **94%+** |
 
+### Docker Ecosystem
+- `backend/Dockerfile` → Multi-stage (builder + runner), non-root user `app`
+- `frontend/Dockerfile.prod` → Multi-stage (node:20-alpine build + nginx:1.27-alpine serve)
+- `docker-compose.yml` → Healthcheck backend, `named volume db_data`, nginx frontend na porta 80
+- `.dockerignore` → Exclui testes, __pycache__, .db, node_modules, dist, IDE files
 
-
-### Conceito
-Um "Nó Fantasma" representa um poste da rede existente da concessionária que serve de condição
-de contorno (boundary condition) para o projeto. Ele **exerce tração mecânica** nos postes reais
-do projeto através dos vãos que os conectam, mas **não é calculado, listado na BOM nem exportado**.
-
-### Flag `is_ghost`
-- **Tabela:** `project_nodes.is_ghost INTEGER DEFAULT 0`
-- **Migração:** executada automaticamente em `database.py → _apply_migrations()` ao abrir conexão
-- **Modelo:** `ProjectNode.is_ghost: bool = False` (domínio) e `ProjectNodeResponse.is_ghost: bool`
-
-### Regras de Negócio (Não Negociáveis)
-1. **Motor de Cálculo (topology_service.py):**
-   - Vãos que conectam um poste real a um nó fantasma **contribuem com tração no poste real**
-     (via `node_configs_map` para o `source_node_id` / `target_node_id`)
-   - Para o próprio nó fantasma, o motor **NÃO computa** `effort_dan`, `utilization_percent`,
-     `is_overloaded` nem `nominal_capacity` (todos ficam 0/False)
-   - O nó fantasma **aparece no diagrama** (necessário para visualizar as arestas dos vãos)
-   - `data["is_ghost"] = True` no payload do `TopologyNode`
-
-2. **Exportação Excel / BOM:**
-   - `nodes = [n for n in all_nodes if not n.is_ghost]` antes de qualquer iteração
-   - Se após filtrar não sobrarem nós reais → HTTP 400 "Projeto vazio"
-   - Nenhuma referência ao nó fantasma aparece no ZIP de exportação
-
-3. **API:**
-   - `PATCH /projects/{id}/nodes/{nid}/ghost` com `{ "is_ghost": true|false }` → toggle a flag
-   - `POST /projects/{id}/nodes` com `"is_ghost": true` → cria diretamente como fantasma
-   - `GET /topology/project/{id}` → inclui nós fantasmas no payload (para exibição) com `is_ghost=True`
-
-### Visual no React Flow (CustomNode.tsx)
-- `is_ghost=True`:
-  - Opacidade **50%** (intencional — é "invisível" no senso que não pertence ao projeto)
-  - Borda **tracejada** (`border-dashed border-slate-400/60`), paleta **cinza**
-  - **SEM** badge de esforço (daN) — ghost não tem esforço calculado
-  - Rótulo "Rede Existente" em lugar da badge
-  - Tooltip explica o conceito ao engenheiro
-- `is_ghost=False`: visual normal existente (Glassmorphism azul)
-
-### Interação Drop-on-Pane (TopologyDiagram.tsx)
-Quando o usuário arrasta a ponta de uma aresta e solta no **fundo do canvas** (sem nó destino):
-1. `onConnectStart` captura `params.nodeId` (nó origem) em `connectSourceRef`
-2. `onConnectEnd` verifica se o target foi o pane (não um nó/handle)
-3. Abre `GhostNodeModal.tsx` com 2 opções:
-   - **"Novo Poste"** → `POST /projects/{id}/nodes` + `POST /projects/{id}/edges` (is_ghost=false)
-   - **"Nó Fantasma (Rede Existente)"** → idem com `is_ghost=true`
-4. Novo nó é posicionado nas coordenadas do canvas onde o mouse foi solto
-
-### Testes Paranóicos (test_ghost_node.py)
-| Classe | Cenários |
-|---|---|
-| `TestGhostFlagPersistence` | DB salva/lê 0/1 corretamente; `get_project_nodes` converte para bool |
-| `TestSetNodeGhost` | toggle true, toggle false, nó inexistente → None |
-| `TestTopologyGhostBehavior` | ghost data["is_ghost"]=True; effort=0; P1 recebe tração de vão com ghost; real data["is_ghost"]=False; ghost aparece no diagrama |
-| `TestExportGhostFilter` | ghost excluído da lista; lista com só ghosts → vazia |
-| `TestGhostNodeAPI` | PATCH ghost=true/false; PATCH 404; export exclui ghost (ZIP tem 1 arquivo); export all-ghost → 400 |
-
-
+## GIS Parser
 
 - **Formatos suportados:** `.kml`, `.kmz`, `.geojson`, `.json`, `.xlsx`, `.xls`
-- **Zero dependências C++:** usa apenas stdlib (`json`, `xml.etree`, `zipfile`, `io`) + `openpyxl`
-- **`parse_file(filename, content)`:** dispatcher público por extensão
-- **`parse_kml(content)`:** extrai Placemarks com ou sem namespace KML 2.2
-- **`parse_kmz(content)`:** descomprime o ZIP e parseia o `.kml` interno
-- **`parse_geojson(content)`:** extrai features `type=Point` com label de `properties.name/label`
-- **`parse_excel(content)`:** lê colunas `lat/latitude`, `lng/lon/longitude`, `label/name/nome`
-- **Erros graciosos:** arquivos malformados levantam `ValueError` → convertido para HTTP 400
-
-## Lógica de Herança de Condutores (Fase 16)
-
-Quando o usuário conecta uma nova aresta no React Flow (nó A → nó B):
-1. O frontend chama `GET /projects/{id}/nodes/{A_id}/outgoing-conductors`
-2. O backend busca o vão de saída mais recente de A (`source_node_id=A, ORDER BY id DESC LIMIT 1`)
-3. Retorna `{ mt_conductor_id, mt_sag_m, bt_conductor_id, bt_sag_m }`
-4. Se existir herança, o frontend usa esses valores no POST `/projects/{id}/edges`
-5. Toast informa ao usuário se condutores foram herdados automaticamente ou não
-
-**Regra de herança:** apenas o vão de saída mais recente (id DESC LIMIT 1) é herdado.
-**Fallback:** se A não tiver vão de saída, a aresta é criada sem condutores (zeros/nulos).
-
-## Importação Atômica GIS (Fase 16)
-
-- **`POST /projects/{id}/parse-file`:** recebe upload de arquivo, retorna lista de `ParsedPoint`
-- **`POST /projects/{id}/import-nodes`:** insere todos os pontos em uma única transação SQLite
-  - Em caso de falha em qualquer inserção, o lote inteiro é revertido (rollback)
-  - Nós importados têm `pole_id=0` (sem poste do catálogo) — o usuário configura depois
-  - Posicionados em grade no canvas: `x = 500 + (i % 10) * 150`, `y = (i // 10) * 150`
-- **`GisImportModal.tsx`:** Modal com lista de pontos parseados + checkboxes + confirmação
+- **Zero dependências C++:** usa apenas stdlib + `openpyxl`
 
 ## Motor de Exportação em Lotes (excel_exporter.py)
 
 - **`BATCH_SIZE = 30`**: máximo de arquivos por lote.
-- **`build_poste_xlsm(data, template_path)`**: gera bytes de um único `.xlsm` com os dados injetados.
-  - Workbook e BytesIO são fechados com `try/finally` (sem memory leaks).
-- **`build_export_zip(postes_data, template_path)`**: gera ZIP mestre.
-  - ≤ 30 postes → arquivos na raiz (`poste_01.xlsm`, …).
-  - > 30 postes → subpastas `Lote_01/`, `Lote_02/`, … com até 30 arquivos cada.
-  - Lista vazia → ZIP válido sem arquivos (sem erro).
-  - BytesIO do ZIP fechado com `try/finally`.
+- **`build_poste_xlsm(data, template_path)`**: gera bytes de um único `.xlsm`.
+- **`build_export_zip(postes_data, template_path)`**: gera ZIP mestre em lotes.
 - **Endpoint:** `GET /projects/{id}/export/excel` → `application/zip`.
-  - HTTP 400 com `"Projeto vazio, adicione postes antes de exportar"` se não houver postes.
-  - HTTP 404 se o projeto não existir.
 
 ## Equipe (Roles)
 

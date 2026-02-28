@@ -4,12 +4,14 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
 import { AlertTriangle, X } from 'lucide-react';
 import { useUIStore, useTopologyHistoryStore } from './store';
-import { FileText, Activity, Network, Plus, FolderOpen } from 'lucide-react';
+import { FileText, Activity, Network } from 'lucide-react';
 import TractionCalculator from './components/TractionCalculator';
 import TopologyDiagram from './components/TopologyDiagram';
 import ForceDiagram from './components/ForceDiagram';
 import Layout from './components/Layout';
 import ShortcutsModal from './components/ShortcutsModal';
+import NewProjectModal from './components/NewProjectModal';
+import ProjectSidebar from './components/ProjectSidebar';
 import ExportButton from './components/ExportButton';
 import RecoveryModal from './components/RecoveryModal';
 import { api, downloadProjectExcel } from './api';
@@ -65,60 +67,6 @@ function useDebounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: n
         [delay]
     );
     return debounced as T;
-}
-
-// ── MODAL DE NOVO PROJETO ─────────────────────────────────────────────────
-function NewProjectModal({ onConfirm, onClose }: { onConfirm: (name: string) => void; onClose: () => void }) {
-  const [name, setName] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = name.trim();
-    if (trimmed) {
-      onConfirm(trimmed);
-      onClose();
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="w-full max-w-sm bg-white/80 backdrop-blur-xl border border-white/70 rounded-2xl shadow-2xl shadow-slate-400/30 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200/60 bg-white/40">
-          <h2 className="text-base font-bold text-slate-800">Novo Projeto</h2>
-        </div>
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Nome do Projeto</label>
-            <input
-              autoFocus
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Ex: Linha 01 - Subestação Norte"
-              className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700 outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all"
-            />
-          </div>
-          <div className="flex gap-3 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100/60 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md shadow-blue-500/30 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-            >
-              Criar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
 }
 
 // ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────
@@ -303,57 +251,14 @@ function App() {
   });
 
   const SidebarContent = (
-    <>
-      <div className="flex items-center gap-2 mb-8 text-xl font-bold text-slate-800">
-        <div className="p-2 bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-500/30">
-          <Activity size={24} />
-        </div>
-        CACL LIGHT
-      </div>
-
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Meus Projetos</span>
-        <button
-          onClick={() => setIsNewProjectOpen(true)}
-          className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 p-1 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-          title="Novo Projeto (Ctrl+N)"
-          aria-label="Criar novo projeto"
-        >
-          <Plus size={18} />
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-        {isLoading ? (
-          <p className="text-sm text-slate-500 animate-pulse">Carregando projetos...</p>
-        ) : (Array.isArray(projects) ? projects : []).map((p: { id: number; name: string }) => (
-          <button
-            key={p.id}
-            onClick={() => setSelectedProjectId(p.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 border focus:outline-none focus:ring-2 focus:ring-blue-400/50 ${selectedProjectId === p.id
-              ? 'bg-white border-white/80 shadow-sm text-blue-700 font-medium'
-              : 'bg-transparent border-transparent text-slate-600 hover:bg-white/40 hover:border-white/40'
-              }`}
-          >
-            <FolderOpen size={16} className={selectedProjectId === p.id ? "text-blue-500" : "text-slate-400"} />
-            <span className="truncate">{p.name}</span>
-          </button>
-        ))}
-        {projects.length === 0 && !isLoading && (
-          <p className="text-xs text-slate-400 text-center mt-4">Nenhum projeto encontrado.</p>
-        )}
-      </div>
-
-      {/* Botão de atalhos no rodapé da sidebar */}
-      <button
-        onClick={() => setIsShortcutsOpen(true)}
-        className="mt-6 flex items-center gap-2 text-xs text-slate-400 hover:text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/50 rounded-md px-1 py-0.5"
-        title="Atalhos de teclado (Shift+?)"
-      >
-        <kbd className="inline-flex items-center justify-center w-5 h-5 rounded border border-slate-200 bg-white/70 text-[10px] font-semibold">?</kbd>
-        Atalhos de teclado
-      </button>
-    </>
+    <ProjectSidebar
+      projects={Array.isArray(projects) ? projects : []}
+      isLoading={isLoading}
+      selectedProjectId={selectedProjectId}
+      onSelectProject={setSelectedProjectId}
+      onNewProject={() => setIsNewProjectOpen(true)}
+      onOpenShortcuts={() => setIsShortcutsOpen(true)}
+    />
   );
 
   return (

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Info, Link2, MapPin, Package, Plus, Settings2 } from 'lucide-react';
+import { Link2, MapPin, Package, Plus } from 'lucide-react';
 import { useUIStore } from '../store';
 import { useCatalogs } from '../hooks/useCatalogs';
 import {
@@ -10,9 +10,9 @@ import {
     useProjectSettings,
     useSaveNode,
     useSaveSpan,
-    useSetNodeEquipment,
-    useUpdateProjectSettings,
 } from '../hooks/useProjects';
+import ProjectSettingsPanel from './ProjectSettingsPanel';
+import NodeEquipmentSelector from './NodeEquipmentSelector';
 
 // ── CLASSES DE ESTILO REUTILIZÁVEIS ──────────────────────────────────────
 const focusRing = 'outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all';
@@ -45,159 +45,6 @@ interface SpanFormData {
     bt_sag_m: number;
     span_length_m: number;
     angle_deg: number;
-}
-
-// ── SUB-COMPONENTE: Seletor de Equipamentos por Nó (Fase 19) ─────────────
-function NodeEquipmentSelector({ projectId, nodeId }: { projectId: number; nodeId: number }) {
-    const { equipment } = useCatalogs();
-    const { data: selectedIds = [] } = useNodeEquipment(projectId, nodeId);
-    const setEquipment = useSetNodeEquipment();
-
-    const toggleEquipment = (equipId: number) => {
-        const next = selectedIds.includes(equipId)
-            ? selectedIds.filter(id => id !== equipId)
-            : [...selectedIds, equipId];
-        setEquipment.mutate(
-            { projectId, nodeId, equipmentIds: next },
-            { onError: () => toast.error('Erro ao atualizar equipamentos.') }
-        );
-    };
-
-    if (equipment.length === 0) return null;
-
-    const totalArea = equipment
-        .filter(e => selectedIds.includes(e.id))
-        .reduce((sum, e) => sum + e.area_arrasto_m2, 0);
-
-    return (
-        <div className="mt-4 p-4 rounded-xl bg-amber-50/60 border border-amber-200/60 space-y-2">
-            <div className="flex items-center gap-2 mb-2">
-                <Package size={14} className="text-amber-600 shrink-0" />
-                <span className="text-xs font-semibold text-amber-800">Equipamentos Acoplados</span>
-                {totalArea > 0 && (
-                    <span className="ml-auto text-[10px] text-amber-600 font-medium">
-                        Área total: {totalArea.toFixed(2)} m²
-                    </span>
-                )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-                {equipment.map(eq => {
-                    const active = selectedIds.includes(eq.id);
-                    return (
-                        <button
-                            key={eq.id}
-                            type="button"
-                            onClick={() => toggleEquipment(eq.id)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all border focus:outline-none focus:ring-2 focus:ring-amber-400/50 ${
-                                active
-                                    ? 'bg-amber-500 text-white border-amber-500 shadow-sm shadow-amber-400/30'
-                                    : 'bg-white/60 text-slate-600 border-slate-200 hover:border-amber-300 hover:bg-amber-50'
-                            }`}
-                        >
-                            {eq.name}
-                            <span className={`text-[10px] ${active ? 'text-white/80' : 'text-slate-400'}`}>
-                                {eq.area_arrasto_m2.toFixed(2)}m²
-                            </span>
-                        </button>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
-
-// ── SUB-COMPONENTE: Painel de Configurações do Projeto (Fase 19) ──────────
-function ProjectSettingsPanel({ projectId }: { projectId: number }) {
-    const { data: settings } = useProjectSettings(projectId);
-    const updateSettings = useUpdateProjectSettings();
-    const [showTooltip, setShowTooltip] = useState(false);
-
-    const handleToggle = () => {
-        const next = !settings?.enable_equipment_drag;
-        updateSettings.mutate(
-            { projectId, settings: { enable_equipment_drag: next } },
-            {
-                onSuccess: () =>
-                    toast(
-                        next
-                            ? 'Modo Avançado de Arrasto ativado.'
-                            : 'Modo Avançado desativado. Cálculo padrão Enel.',
-                        { icon: next ? '⚙️' : '✅' }
-                    ),
-                onError: () => toast.error('Erro ao atualizar configurações.'),
-            }
-        );
-    };
-
-    const enabled = settings?.enable_equipment_drag ?? false;
-
-    return (
-        <div className="bg-white/60 backdrop-blur-md border border-white/60 shadow-lg shadow-slate-200/50 rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-200/50">
-                <div className="p-2 bg-slate-100 text-slate-600 rounded-lg">
-                    <Settings2 size={20} />
-                </div>
-                <h2 className="text-lg font-semibold text-slate-800">Configurações do Projeto</h2>
-            </div>
-
-            {/* Toggle: enable_equipment_drag */}
-            <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-medium text-slate-700">
-                            Cálculo Avançado de Arrasto (Equipamentos)
-                        </span>
-                        <div className="relative">
-                            <button
-                                type="button"
-                                onMouseEnter={() => setShowTooltip(true)}
-                                onMouseLeave={() => setShowTooltip(false)}
-                                onFocus={() => setShowTooltip(true)}
-                                onBlur={() => setShowTooltip(false)}
-                                className="text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400/50 rounded-full"
-                                aria-label="Informações sobre o modo avançado"
-                            >
-                                <Info size={14} />
-                            </button>
-                            {showTooltip && (
-                                <div className="absolute left-5 top-0 z-20 w-64 p-3 text-xs text-slate-700 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-lg shadow-slate-200/50">
-                                    <p className="font-semibold text-amber-700 mb-1">⚠️ Modo Avançado</p>
-                                    <p>
-                                        Ative apenas se exigido pela concessionária. Soma a área de
-                                        arrasto de transformadores, cruzetas e chaves ao cálculo do
-                                        vento, aumentando o esforço resultante no poste.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                        {enabled
-                            ? 'Ativo — equipamentos aumentam o esforço de vento.'
-                            : 'Inativo — padrão Enel/Light (apenas cabos e poste).'}
-                    </p>
-                </div>
-
-                {/* Toggle switch estilo iOS */}
-                <button
-                    type="button"
-                    role="switch"
-                    aria-checked={enabled}
-                    onClick={handleToggle}
-                    disabled={updateSettings.isPending}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50 disabled:opacity-60 ${
-                        enabled ? 'bg-amber-500' : 'bg-slate-200'
-                    }`}
-                >
-                    <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
-                            enabled ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                    />
-                </button>
-            </div>
-        </div>
-    );
 }
 
 // ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────
