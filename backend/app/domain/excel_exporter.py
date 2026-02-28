@@ -45,12 +45,17 @@ def build_poste_xlsm(data: dict[str, Any], template_path: Path = TEMPLATE_PATH) 
         Bytes do arquivo .xlsm gerado.
     """
     wb = openpyxl.load_workbook(template_path, keep_vba=True)
-    ws = wb[CALC_SHEET]
-    _inject_data(ws, data)
-
-    buf = io.BytesIO()
-    wb.save(buf)
-    return buf.getvalue()
+    try:
+        ws = wb[CALC_SHEET]
+        _inject_data(ws, data)
+        buf = io.BytesIO()
+        try:
+            wb.save(buf)
+            return buf.getvalue()
+        finally:
+            buf.close()
+    finally:
+        wb.close()
 
 
 def build_export_zip(
@@ -78,17 +83,20 @@ def build_export_zip(
     use_batches = total > BATCH_SIZE
 
     zip_buf = io.BytesIO()
-    with zipfile.ZipFile(zip_buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-        for idx, data in enumerate(postes_data, start=1):
-            filename = f"poste_{str(idx).zfill(pad)}.xlsm"
-            xlsm_bytes = build_poste_xlsm(data, template_path=template_path)
+    try:
+        with zipfile.ZipFile(zip_buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for idx, data in enumerate(postes_data, start=1):
+                filename = f"poste_{str(idx).zfill(pad)}.xlsm"
+                xlsm_bytes = build_poste_xlsm(data, template_path=template_path)
 
-            if use_batches:
-                lote_num = (idx - 1) // BATCH_SIZE + 1
-                arcname = f"Lote_{str(lote_num).zfill(2)}/{filename}"
-            else:
-                arcname = filename
+                if use_batches:
+                    lote_num = (idx - 1) // BATCH_SIZE + 1
+                    arcname = f"Lote_{str(lote_num).zfill(2)}/{filename}"
+                else:
+                    arcname = filename
 
-            zf.writestr(arcname, xlsm_bytes)
+                zf.writestr(arcname, xlsm_bytes)
 
-    return zip_buf.getvalue()
+        return zip_buf.getvalue()
+    finally:
+        zip_buf.close()

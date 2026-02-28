@@ -74,7 +74,7 @@ def export_project_excel(project_id: int, repo: ProjectRepository = Depends(get_
 
     nodes = repo.get_project_nodes(project_id)
     if not nodes:
-        raise HTTPException(status_code=422, detail="Projeto não possui postes cadastrados")
+        raise HTTPException(status_code=400, detail="Projeto vazio, adicione postes antes de exportar")
 
     postes_data = []
     for idx, node in enumerate(nodes, start=1):

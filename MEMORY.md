@@ -4,7 +4,7 @@
 
 O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado para substituir planilhas complexas de engenharia elétrica (como "CÁLCULO DE TRAÇÃO OII-25-2249.xlsm" e "POSTE69.xlsm"). O objetivo é realizar o cálculo de esforços mecânicos em postes de distribuição de energia, garantindo precisão idêntica à planilha original.
 
-**Versão atual:** `0.14.0` (Fase 14)
+**Versão atual:** `0.15.1` (Fase 15.1 — Quality Gate)
 
 ## Regras e Arquitetura (Não Negociáveis)
 
@@ -20,25 +20,25 @@ O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado
 8. **Infraestrutura:** Docker First. Manter `.gitignore`, `.dockerignore` e `docker-compose.yml` atualizados.
 9. **BIM:** Integração Half-way BIM na geração de arquivos .dxf (via accoreconsole.exe de modo headless para testes).
 
-## Árvore de Pastas Padronizada (Fase 14)
+## Árvore de Pastas Padronizada (Fase 15.1)
 
 ```
 calc_light/
 ├── MEMORY.md                          ← RAG do projeto (este arquivo)
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                    ← FastAPI entry-point; APP_VERSION = "0.14.0"
+│   │   ├── main.py                    ← FastAPI entry-point; APP_VERSION = "0.15.1"
 │   │   ├── templates/
 │   │   │   └── modelo.xlsm            ← Planilha modelo (keep_vba=True)
 │   │   ├── domain/
 │   │   │   ├── excel_mapping.py       ← Dicionário estrito de células de entrada
-│   │   │   ├── excel_exporter.py      ← Motor de exportação ZIP em lotes
+│   │   │   ├── excel_exporter.py      ← Motor de exportação ZIP em lotes (memory-safe)
 │   │   │   ├── calculators.py
 │   │   │   ├── models.py
 │   │   │   └── topology_service.py
 │   │   ├── api/
 │   │   │   ├── routers/
-│   │   │   │   ├── projects.py        ← Inclui GET /{id}/export/excel
+│   │   │   │   ├── projects.py        ← Inclui GET /{id}/export/excel; HTTP 400 para projeto vazio
 │   │   │   │   ├── calculations.py
 │   │   │   │   ├── catalogs.py
 │   │   │   │   ├── forces.py
@@ -53,18 +53,23 @@ calc_light/
 │   │   │   ├── catalogs.py
 │   │   │   └── topology.py
 │   │   └── tests/
-│   │       ├── test_api.py
-│   │       ├── test_excel_export.py   ← 22 testes paranóicos (35 postes, lotes, células)
+│   │       ├── test_api.py            ← Inclui testes HTTP 400/404 para export
+│   │       ├── test_excel_export.py   ← 24 testes paranóicos (35 postes, lotes, células, lista vazia)
 │   │       ├── test_calculators.py
 │   │       ├── test_database.py
 │   │       └── test_topology.py
 │   └── requirements.txt
 ├── frontend/
-│   ├── package.json                   ← version: "0.14.0"
+│   ├── package.json                   ← version: "0.15.1"
 │   └── src/
 │       ├── api.ts                     ← downloadProjectExcel()
-│       ├── App.tsx                    ← Botão "Exportar Excel" (Glassmorphism)
+│       ├── App.tsx                    ← Usa ExportButton; trata HTTP 400 com toast específico
 │       └── components/
+│           ├── ExportButton.tsx       ← Botão isolado (SRP); testável com Vitest
+│           └── __tests__/
+│               ├── ExportButton.test.tsx  ← 7 testes Vitest (≥80% cobertura)
+│               ├── CustomNode.test.tsx
+│               └── CustomEdge.test.tsx
 └── database/
 ```
 
@@ -104,10 +109,15 @@ Planilha alvo: `Ponto (1)` no `modelo.xlsm`.  Apenas inputs brutos; cálculos fi
 
 - **`BATCH_SIZE = 30`**: máximo de arquivos por lote.
 - **`build_poste_xlsm(data, template_path)`**: gera bytes de um único `.xlsm` com os dados injetados.
+  - Workbook e BytesIO são fechados com `try/finally` (sem memory leaks).
 - **`build_export_zip(postes_data, template_path)`**: gera ZIP mestre.
   - ≤ 30 postes → arquivos na raiz (`poste_01.xlsm`, …).
   - > 30 postes → subpastas `Lote_01/`, `Lote_02/`, … com até 30 arquivos cada.
+  - Lista vazia → ZIP válido sem arquivos (sem erro).
+  - BytesIO do ZIP fechado com `try/finally`.
 - **Endpoint:** `GET /projects/{id}/export/excel` → `application/zip`.
+  - HTTP 400 com `"Projeto vazio, adicione postes antes de exportar"` se não houver postes.
+  - HTTP 404 se o projeto não existir.
 
 ## Equipe (Roles)
 

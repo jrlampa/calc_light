@@ -226,3 +226,14 @@ def test_zip_31_uses_lote_folders():
         names = zf.namelist()
     assert any(n.startswith("Lote_01/") for n in names)
     assert any(n.startswith("Lote_02/") for n in names)
+
+
+# ─── Testes de caso extremo: lista vazia ──────────────────────────────────────
+
+
+def test_build_export_zip_empty_returns_valid_zip():
+    """Lista vazia de postes deve gerar um ZIP válido sem arquivos."""
+    zip_bytes = build_export_zip([], template_path=TEMPLATE)
+    assert zipfile.is_zipfile(io.BytesIO(zip_bytes))
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        assert zf.namelist() == []

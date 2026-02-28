@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
-import { AlertTriangle, X, Download } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 import { useUIStore } from './store';
 import { FileText, Activity, Network, Plus, FolderOpen } from 'lucide-react';
 import TractionCalculator from './components/TractionCalculator';
@@ -10,6 +10,7 @@ import TopologyDiagram from './components/TopologyDiagram';
 import ForceDiagram from './components/ForceDiagram';
 import Layout from './components/Layout';
 import ShortcutsModal from './components/ShortcutsModal';
+import ExportButton from './components/ExportButton';
 import { api, downloadProjectExcel } from './api';
 
 // ── MODAL DE NOVO PROJETO ────────────────────────────────────────────────
@@ -264,27 +265,26 @@ function App() {
               </button>
 
               {/* ── Botão de Exportação Excel (Glassmorphism) ─────────────── */}
-              <button
+              <ExportButton
+                isExporting={isExporting}
                 onClick={async () => {
                   if (!selectedProjectId) return;
                   setIsExporting(true);
                   try {
                     await downloadProjectExcel(selectedProjectId);
                     toast.success('Exportação concluída! Verifique seus downloads.');
-                  } catch {
-                    toast.error('Erro ao exportar planilhas. Tente novamente.');
+                  } catch (error: unknown) {
+                    const axErr = error as { response?: { status?: number } };
+                    if (axErr?.response?.status === 400) {
+                      toast.error('Projeto vazio, adicione postes antes de exportar');
+                    } else {
+                      toast.error('Erro ao exportar planilhas. Tente novamente.');
+                    }
                   } finally {
                     setIsExporting(false);
                   }
                 }}
-                disabled={isExporting}
-                className="ml-auto flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border border-white/60 bg-white/30 backdrop-blur-md shadow-md shadow-blue-200/30 text-blue-700 hover:bg-white/50 hover:shadow-blue-300/40 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50 disabled:opacity-60 disabled:cursor-not-allowed"
-                title="Exportar planilhas Excel (.xlsm) para todos os postes do projeto"
-                aria-label="Exportar planilhas Excel"
-              >
-                <Download size={16} className={isExporting ? 'animate-bounce' : ''} />
-                {isExporting ? 'Exportando…' : 'Exportar Excel'}
-              </button>
+              />
             </div>
 
             {/* TAB CONTENT */}
