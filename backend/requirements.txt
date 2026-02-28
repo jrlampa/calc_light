@@ -1,5 +1,6 @@
 fastapi==0.110.0
 uvicorn==0.27.1
+gunicorn==22.0.0
 pydantic==2.6.3
 sqlalchemy==2.0.28
 pytest==8.0.2

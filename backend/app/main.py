@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,9 +11,22 @@ app = FastAPI(
     version="0.3.0"
 )
 
+# Origins permitidas: lidas de variável de ambiente em produção,
+# com fallback para os endereços de desenvolvimento local.
+# Em produção, o nginx proxia /api/ com Origin: http://localhost,
+# portanto o fallback abaixo é suficiente sem expor * para toda a internet.
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv(
+        "ALLOWED_ORIGINS",
+        "http://localhost,http://127.0.0.1,http://localhost:5173,http://127.0.0.1:5173"
+    ).split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

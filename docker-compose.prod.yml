@@ -1,0 +1,60 @@
+version: '3.9'
+
+# ── Rede interna — o backend nunca expõe portas para o host ─────────────────
+networks:
+  cacl_prod_net:
+    driver: bridge
+
+# ── Volume nomeado para persistência do banco SQLite ─────────────────────────
+# REGRA DE OURO: o arquivo do banco é mapeado para um volume Docker.
+# Mesmo que o contêiner caia ou seja atualizado, os dados do usuário são preservados.
+volumes:
+  cacl_db_data:
+
+services:
+
+  # ── Backend (FastAPI via Gunicorn + UvicornWorker) ─────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    environment:
+      - DATABASE_URL=sqlite:////app/data/cacl_light.db
+      - GUNICORN_WORKERS=2
+      # ALLOWED_ORIGINS: nginx normaliza o Origin para http://localhost ao proxiar /api/,
+      # portanto o fallback padrão de main.py já é suficiente.
+      # Para acesso direto ao backend (testes/debug), adicione origens adicionais aqui.
+    volumes:
+      # Persistência: banco SQLite mapeado para volume nomeado
+      - cacl_db_data:/app/data
+    networks:
+      - cacl_prod_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    # O backend NÃO expõe portas para o host — comunica-se apenas pela rede interna
+    expose:
+      - "8000"
+
+  # ── Frontend (React SPA servida pelo nginx:alpine) ─────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        # O nginx proxia /api/* → backend:8000, então a SPA usa /api como base URL
+        VITE_API_URL: /api
+    ports:
+      # Único ponto de entrada público: porta 80
+      - "80:80"
+    networks:
+      - cacl_prod_net
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
