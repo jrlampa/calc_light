@@ -1,6 +1,6 @@
 import pytest
 from app.domain.models import CalculationInput, Conductor
-from app.domain.services import calculate_level_resultant
+from app.domain.calculators import calculate_level_resultant
 
 def test_traction_mt1_level():
     # Test based on the "Ponto (1)" spreadsheet logic
@@ -64,3 +64,29 @@ def test_traction_mt1_level():
 
     # Spreadsheet Tração on pole (MT1) should be ~365.81 daN
     assert abs(res.traction_on_pole_dan - 365.81) < 0.5
+
+
+def test_angle_edge_cases():
+    c1 = Conductor(
+        id=1, name="Test", diameter_m=0.01, weight_kg_m=0.1, cable_qty=1, network_type="Conv"
+    )
+    # Case 1: X = 0, Y = 0 (symmetric spans 0 and 180)
+    inp1 = CalculationInput(span_m=50, sag_m=0.5, angle_deg=0, pole_height_m=10, anchorage_height_m=9, conductor_id=1, level="MT", level_order=1)
+    inp2 = CalculationInput(span_m=50, sag_m=0.5, angle_deg=180, pole_height_m=10, anchorage_height_m=9, conductor_id=1, level="MT", level_order=1)
+    res = calculate_level_resultant([inp1, inp2], [c1, c1])
+    assert res.resultant_angle_deg == 0.0
+
+    # Case 2: X = 0, Y != 0 (symmetric spans 90 and 90, meaning X will be 0 and Y > 0)
+    inp3 = CalculationInput(span_m=50, sag_m=0.5, angle_deg=90, pole_height_m=10, anchorage_height_m=9, conductor_id=1, level="MT", level_order=1)
+    res2 = calculate_level_resultant([inp3], [c1])
+    assert res2.resultant_angle_deg > 0
+
+    # Case 3: X < 0
+    inp4 = CalculationInput(span_m=50, sag_m=0.5, angle_deg=180, pole_height_m=10, anchorage_height_m=9, conductor_id=1, level="MT", level_order=1)
+    res3 = calculate_level_resultant([inp4], [c1])
+    assert res3.resultant_angle_deg == 180
+
+    # Case 4: Zero calculation without crashing (pole_h = 0)
+    inp5 = CalculationInput(span_m=50, sag_m=0.5, angle_deg=0, pole_height_m=0, anchorage_height_m=9, conductor_id=1, level="MT", level_order=1)
+    res4 = calculate_level_resultant([inp5], [c1])
+    assert res4.traction_on_pole_dan == 0.0

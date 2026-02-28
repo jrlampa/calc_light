@@ -46,19 +46,22 @@ def test_build_topology_diagram_isolated():
     assert n1.data["label"] == "Poste 1"
 
 def test_calculate_node_force_vectors():
-    from app.domain.models import CalculationInput
-    
+    node = ProjectNode(id=1, project_id=1, pole_id=1, label="Poste 1", pos_x=0, pos_y=0)
     c1 = Conductor(id=1, name="MT-Cabo", diameter_m=0.015, weight_kg_m=0.6, cable_qty=3, network_type="Conv")
+    conductors_dict = {1: c1}
+    poles_dict = {1: 11.0}
     
-    i1 = CalculationInput(
-        span_m=50, sag_m=0.5, angle_deg=90, pole_height_m=11, anchorage_height_m=10.5,
-        conductor_id=1, level="MT1", level_order=1
+    span = NodeSpanConfig(
+        id=1, source_node_id=1, target_node_id=2, 
+        mt_conductor_id=1, mt_sag_m=0.5, 
+        bt_conductor_id=0, bt_sag_m=0.0, 
+        span_length_m=50, angle_deg=90
     )
     
-    vecs = calculate_node_force_vectors([i1], [c1])
+    vecs = calculate_node_force_vectors(node, [span], conductors_dict, poles_dict)
     
     assert len(vecs) == 2 # 1 tramo + 1 resultante
-    assert vecs[0]["type"] == "traction"
-    assert vecs[1]["type"] == "resultant"
-    assert vecs[0]["magnitude"] > 0
-    assert vecs[1]["magnitude"] > 0
+    assert vecs[0]["level"] == "MT1"
+    assert vecs[1]["level"] == "RESULTANTE"
+    assert vecs[0]["magnitude_dan"] > 0
+    assert vecs[1]["magnitude_dan"] > 0

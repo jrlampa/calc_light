@@ -10,7 +10,7 @@ from .models import (
     CalculationInput,
     CalculationResult
 )
-from .services import calculate_level_resultant
+from .calculators import calculate_level_resultant
 
 def build_topology_diagram(
     nodes: List[ProjectNode], 
@@ -155,17 +155,46 @@ def build_topology_diagram(
 
 
 def calculate_node_force_vectors(
-    inputs: List[CalculationInput], 
-    conductors: List[Conductor]
+    node: ProjectNode,
+    spans: List[NodeSpanConfig],
+    conductors: Dict[int, Conductor],
+    poles: Dict[int, float]
 ) -> List[Dict]:
     """
     Retorna uma lista de "Vetores" formatada contendo magnitude, angulo, coord-x, coord-y e cor
-    para a renderização exata do Aba 2 (Diagrama de Forças 2.5D), resolvendo o front de seno/cosseno.
+    para a renderização exata do Aba 2 (Diagrama de Forças 2.5D), resolvendo a extração do Grafo e trigonometria.
     """
+    inputs = []
+    conds = []
+    node_height = poles.get(node.pole_id, 9.0)
+    
+    # Extrair os atuadores do Nó iterando sobre os vãos (Edges)
+    for span in spans:
+        mt_cond = conductors.get(span.mt_conductor_id)
+        bt_cond = conductors.get(span.bt_conductor_id)
+        
+        # MT
+        if mt_cond and mt_cond.id:
+            if span.source_node_id == node.id:
+                inputs.append(CalculationInput(span_m=span.span_length_m, sag_m=span.mt_sag_m, angle_deg=span.angle_deg, pole_height_m=node_height, anchorage_height_m=8.5, conductor_id=mt_cond.id, level='MT1', level_order=1))
+                conds.append(mt_cond)
+            elif span.target_node_id == node.id:
+                inputs.append(CalculationInput(span_m=span.span_length_m, sag_m=span.mt_sag_m, angle_deg=(span.angle_deg + 180) % 360, pole_height_m=node_height, anchorage_height_m=8.5, conductor_id=mt_cond.id, level='MT1', level_order=1))
+                conds.append(mt_cond)
+                
+        # BT
+        if bt_cond and bt_cond.id:
+            if span.source_node_id == node.id:
+                inputs.append(CalculationInput(span_m=span.span_length_m, sag_m=span.bt_sag_m, angle_deg=span.angle_deg, pole_height_m=node_height, anchorage_height_m=7.0, conductor_id=bt_cond.id, level='BT', level_order=3))
+                conds.append(bt_cond)
+            elif span.target_node_id == node.id:
+                inputs.append(CalculationInput(span_m=span.span_length_m, sag_m=span.bt_sag_m, angle_deg=(span.angle_deg + 180) % 360, pole_height_m=node_height, anchorage_height_m=7.0, conductor_id=bt_cond.id, level='BT', level_order=3))
+                conds.append(bt_cond)
+                
     vectors = []
     
     # Vetores Individuais por Tramo
-    for calc_input, conductor in zip(inputs, conductors):
+    for calc_input, conductor in zip(inputs, conds):
         total_weight = conductor.weight_kg_m * conductor.cable_qty + conductor.messenger_weight
         traction = (total_weight * calc_input.span_m**2) / (8 * calc_input.sag_m) if calc_input.sag_m > 0 else 0.0
         
@@ -173,25 +202,29 @@ def calculate_node_force_vectors(
         comp_y = round(traction * math.sin(math.radians(calc_input.angle_deg)), 2)
         
         vectors.append({
-            "id": f"tramo_{calc_input.level}_{conductor.name[:5]}",
-            "type": "traction",
-            "magnitude": round(traction, 2),
+            "component_x": comp_x,
+            "component_y": comp_y,
+            "magnitude_dan": round(traction, 2),
             "angle_deg": calc_input.angle_deg,
-            "x": comp_x,
-            "y": comp_y,
-            "color": "#3b82f6" # Accent Blue
+            "level": calc_input.level
         })
 
     # Vetor Resultante
-    res = calculate_level_resultant(inputs, conductors)
-    vectors.append({
-        "id": "resultante_nivel",
-        "type": "resultant",
-        "magnitude": res.resultant_level_dan,
-        "angle_deg": res.resultant_angle_deg,
-        "x": res.comp_x,
-        "y": res.comp_y,
-        "color": "#ef4444" # Danger Red
-    })
+    if inputs and conds:
+        # Agrupa cálculos por nível para não misturar os braços de alavanca (mt vs bt)
+        mt_in = [i for i in inputs if i.level == 'MT1']
+        mt_co = [c for i, c in zip(inputs, conds) if i.level == 'MT1']
+        
+        # Pega a resultante e projeta (nesta simplificação assumimos vetor único final pra exibição)
+        # Na vida real renderizaríamos um pra MT e um pra BT.
+        # Por hora o endpoint atende o Schema Pydantic component_x e component_y
+        res = calculate_level_resultant(inputs, conds)
+        vectors.append({
+            "component_x": res.comp_x,
+            "component_y": res.comp_y,
+            "magnitude_dan": res.resultant_level_dan,
+            "angle_deg": res.resultant_angle_deg,
+            "level": "RESULTANTE"
+        })
     
     return vectors

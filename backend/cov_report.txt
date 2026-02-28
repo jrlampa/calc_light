@@ -1,0 +1,18 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.0.2, pluggy-1.6.0
+rootdir: C:\CALC_LIGHT\backend
+plugins: anyio-4.12.1, cov-7.0.0
+collected 3 items
+
+app\tests\test_calculators.py .                                          [ 33%]
+app\tests\test_topology.py ..                                            [100%]
+
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.10-final-0 _______________
+
+Name                        Stmts   Miss  Cover   Missing
+---------------------------------------------------------
+app\domain\calculators.py      41      2    95%   54, 58
+---------------------------------------------------------
+TOTAL                          41      2    95%
+============================== 3 passed in 0.18s ==============================

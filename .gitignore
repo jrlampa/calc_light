@@ -1,0 +1,24 @@
+# Ambiente Virtual Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+.venv/
+.pytest_cache/
+
+# Node/Vite (Frontend)
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# IDEs e OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Database
+cacl_light.db

@@ -1,6 +1,6 @@
 import sqlite3
 from typing import List, Optional
-from .models import Project, ProjectNode, NodeSpanConfig
+from app.domain.models import Project, ProjectNode, NodeSpanConfig
 
 class ProjectRepository:
     def __init__(self, db_path: str):

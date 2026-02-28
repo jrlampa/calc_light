@@ -15,10 +15,10 @@ body {
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-color);
-  background-image: 
-    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-    radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
-    radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+  background-image:
+    radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 0.2) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 0.2) 0, transparent 50%);
   color: var(--text-primary);
   min-height: 100vh;
   display: flex;
@@ -40,7 +40,9 @@ body {
   max-width: 1200px;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   margin-top: 0;
   font-weight: 600;
   letter-spacing: -0.025em;
@@ -66,6 +68,35 @@ h1, h2, h3 {
   font-size: 1.1rem;
 }
 
+.tramo-grid-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .tramo-grid-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .tramo-grid-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tramo-box {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+  min-width: 0;
+}
+
 .grid-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -87,7 +118,8 @@ label {
   letter-spacing: 0.05em;
 }
 
-input, select {
+input,
+select {
   width: 100%;
   padding: 0.75rem 1rem;
   background: rgba(15, 23, 42, 0.6);
@@ -100,7 +132,8 @@ input, select {
   box-sizing: border-box;
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }

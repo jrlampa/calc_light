@@ -1,120 +1,76 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import sqlite3
-import os
-from pydantic import BaseModel
-from typing import List, Dict
 
-from app.domain.models import (
-    CalculationInput, CalculationResult, Conductor,
-    Project, ProjectNode, NodeSpanConfig, ProjectTopology
-)
-from app.domain.services import calculate_level_resultant
-from app.domain.topology_service import build_topology_diagram, calculate_node_force_vectors
-from app.domain.project_repository import ProjectRepository
+# Import das novas rotas arquitetura Fase 3
+from app.api.routers import catalogs, projects, calculations, topology, forces
 
 app = FastAPI(title="CACL_LIGHT API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-default_db_path = os.path.join(BASE_DIR, "database", "cacl_light.db")
+# Registry dos Routers
+app.include_router(catalogs.router)
+app.include_router(projects.router)
+app.include_router(calculations.router)
+app.include_router(topology.router)
+app.include_router(forces.router)
 
-db_url = os.getenv("DATABASE_URL")
-if db_url and db_url.startswith("sqlite:///"):
-    DB_PATH = db_url.replace("sqlite:///", "")
-else:
-    DB_PATH = default_db_path
-
-def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-@app.get("/conductors")
-def get_conductors():
-    conn = get_db_connection()
-    conductors = conn.execute("SELECT * FROM conductors").fetchall()
-    conn.close()
-    return [dict(row) for row in conductors]
-
-@app.get("/poles")
-def get_poles():
-    conn = get_db_connection()
-    poles = conn.execute("SELECT * FROM poles").fetchall()
-    conn.close()
-    return [dict(row) for row in poles]
-
-@app.post("/calculate", response_model=CalculationResult)
-def perform_calculation(inputs: List[CalculationInput], conductors: List[Conductor]):
-    """
-    Receives an array of calculation inputs for different phases/levels and computes resultants.
-    """
-    return calculate_level_resultant(inputs=inputs, conductors=conductors)
-
-@app.get("/health")
+@app.get("/health", tags=["System"])
 def health_check():
+    """Health check básico para CI/CD."""
     return {"status": "ok"}
 
-# --- Endpoints Fase 2 (CRUD Projetos e Diagramas) ---
-
-def get_repository():
-    return ProjectRepository(db_path=DB_PATH)
-
-@app.post("/projects", response_model=Project)
-def create_project(project: Project):
-    return get_repository().create_project(project)
-
-@app.get("/projects", response_model=List[Project])
-def list_projects():
-    return get_repository().get_projects()
-
-@app.post("/projects/{project_id}/nodes", response_model=ProjectNode)
-def add_project_node(project_id: int, node: ProjectNode):
-    node.project_id = project_id
-    return get_repository().add_node(node)
-
-@app.post("/projects/{project_id}/spans", response_model=NodeSpanConfig)
-def add_node_span(project_id: int, span: NodeSpanConfig):
-    return get_repository().add_span_config(span)
-
-@app.get("/topology/project/{project_id}", response_model=ProjectTopology)
-def get_project_topology(project_id: int):
+@app.get("/forces-diagram/node/{node_id}")
+def get_forces_diagram(node_id: int):
     repo = get_repository()
-    nodes = repo.get_project_nodes(project_id)
-    spans = repo.get_span_configs_for_project(project_id)
-    
-    # Fetch conductors as dict
+    # Fetch all spans where this node is source or target
     conn = get_db_connection()
     c_rows = conn.execute("SELECT * FROM conductors").fetchall()
     conductors_dict = {row["id"]: Conductor(**dict(row)) for row in c_rows}
     
-    # Fetch poles as dict
-    p_rows = conn.execute("SELECT * FROM poles").fetchall()
-    poles_dict = {row["id"]: float(row["height_m"]) for row in p_rows}
+    # We need the pole height for this node
+    node_row = conn.execute("SELECT * FROM project_nodes WHERE id = ?", (node_id,)).fetchone()
+    if not node_row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Node not found")
+        
+    pole_row = conn.execute("SELECT * FROM poles WHERE id = ?", (node_row["pole_id"],)).fetchone()
+    pole_height = float(pole_row["height_m"]) if pole_row else 9.0
+    
+    # Get spans
+    s_rows = conn.execute("SELECT * FROM node_span_configs WHERE source_node_id = ? OR target_node_id = ?", (node_id, node_id)).fetchall()
+    spans = [NodeSpanConfig(**dict(row)) for row in s_rows]
     conn.close()
     
-    # Smart Backend: Build Topology completely isolated in domain
-    topology = build_topology_diagram(nodes, spans, conductors_dict, poles_dict)
+    inputs = []
+    conds = []
     
-    # Update effort back to DB asynchronously (or sync here for simplicity)
-    for db_node in nodes:
-        repo.update_node_effort(db_node.id, db_node.effort_dan)
-        
-    return topology
-
-# Requires the exact inputs to render node vectors 2.5D
-class ForceDiagramRequest(BaseModel):
-    inputs: List[CalculationInput]
-    conductors: List[Conductor]
-
-@app.post("/forces-diagram/node")
-def get_forces_diagram(req: ForceDiagramRequest):
-    vectors = calculate_node_force_vectors(req.inputs, req.conductors)
+    for span in spans:
+        mt_cond = conductors_dict.get(span.mt_conductor_id)
+        if mt_cond:
+            angle = span.angle_deg if span.source_node_id == node_id else (span.angle_deg + 180) % 360
+            inputs.append(CalculationInput(
+                span_m=span.span_length_m, sag_m=span.mt_sag_m, angle_deg=angle,
+                pole_height_m=pole_height, anchorage_height_m=8.5,
+                conductor_id=mt_cond.id, level='MT1', level_order=1
+            ))
+            conds.append(mt_cond)
+            
+        bt_cond = conductors_dict.get(span.bt_conductor_id)
+        if bt_cond:
+            angle = span.angle_deg if span.source_node_id == node_id else (span.angle_deg + 180) % 360
+            inputs.append(CalculationInput(
+                span_m=span.span_length_m, sag_m=span.bt_sag_m, angle_deg=angle,
+                pole_height_m=pole_height, anchorage_height_m=7.0,
+                conductor_id=bt_cond.id, level='BT', level_order=3
+            ))
+            conds.append(bt_cond)
+            
+    vectors = calculate_node_force_vectors(inputs, conds)
     return {"vectors": vectors}
