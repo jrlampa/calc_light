@@ -1,8 +1,8 @@
 import pytest
 import os
-from app.scripts.legacy_importer import LegacyImporter, normalize_name
-from app.domain.calculators import calculate_level_resultant
-from app.domain.models import CalculationInput, Conductor
+from scripts.legacy_importer import LegacyImporter, normalize_name
+from domain.calculators import calculate_level_resultant
+from domain.models import CalculationInput, Conductor
 
 # Caminho para a planilha legado
 EXCEL_PATH = r"C:\CALC_LIGHT\CÁLCULO DE TRAÇÃO OII-25-2249.xlsm"

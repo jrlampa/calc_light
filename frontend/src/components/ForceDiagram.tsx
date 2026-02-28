@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useUIStore } from '../store';
 import { useNodeForces, type ForceVector } from '../hooks/useNodeForces';
 import { useProjectNodes } from '../hooks/useProjects';
+import '../components/ForceDiagram.module.css';
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────
 const SVG_SIZE = 480;
@@ -69,9 +70,12 @@ function VectorArrow({
     const strokeW = isResult ? 3.5 : 2;
     const filter = isResult ? `drop-shadow(0 0 6px ${color})` : undefined;
 
+    // Move cursor and filter to className, filter via Tailwind drop-shadow utilities
+    const groupClass = isResult ? 'cursor-pointer drop-shadow-lg' : 'cursor-pointer';
     return (
         <g
-            style={{ cursor: 'pointer', filter }}
+            className={groupClass}
+            filter={filter}
             onMouseEnter={() => onHover(vec)}
             onMouseLeave={onLeave}
         >
@@ -142,12 +146,14 @@ export default function ForcesDiagram() {
                 {vectors && vectors.length > 0 && (
                     <div className="mt-auto pt-4 border-t border-slate-200 space-y-1.5">
                         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Legenda</p>
-                        {Object.entries(LEVEL_COLORS).map(([level, color]) => {
+                        {Object.keys(LEVEL_COLORS).map((level) => {
                             const hasVector = vectors.some(v => v.level === level);
                             if (!hasVector) return null;
                             return (
                                 <div key={level} className="flex items-center gap-2 text-xs text-slate-600">
-                                    <div className="w-6 h-0.5 rounded-full" style={{ backgroundColor: color, height: level === 'RESULT' ? '3px' : '1.5px' }} />
+                                    <div
+                                        className={`rounded-full ${level === 'RESULT' ? 'w-6 h-[3px]' : 'w-6 h-[1.5px]'} legend-color-${level.toLowerCase()}`}
+                                    />
                                     <span>{levelLabel(level)}</span>
                                 </div>
                             );
@@ -206,8 +212,7 @@ export default function ForcesDiagram() {
                         <svg
                             width={SVG_SIZE} height={SVG_SIZE}
                             viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
-                            className="mx-auto block"
-                            style={{ maxWidth: '100%', height: 'auto' }}
+                            className="mx-auto block max-w-full h-auto"
                         >
                             {/* Grid de fundo */}
                             {gridLines.map(r => (
