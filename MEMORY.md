@@ -4,7 +4,7 @@
 
 O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado para substituir planilhas complexas de engenharia elétrica (como "CÁLCULO DE TRAÇÃO OII-25-2249.xlsm" e "POSTE69.xlsm"). O objetivo é realizar o cálculo de esforços mecânicos em postes de distribuição de energia, garantindo precisão idêntica à planilha original.
 
-**Versão atual:** `0.16.1` (Fase 16.1 — Nó Fantasma / Ghost Node)
+**Versão atual:** `0.17.0` (Fase 17 — Solver Global / Motor de Otimização)
 
 ## Regras e Arquitetura (Não Negociáveis)
 
@@ -20,14 +20,14 @@ O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado
 8. **Infraestrutura:** Docker First. Manter `.gitignore`, `.dockerignore` e `docker-compose.yml` atualizados.
 9. **BIM:** Integração Half-way BIM na geração de arquivos .dxf (via accoreconsole.exe de modo headless para testes).
 
-## Árvore de Pastas Padronizada (Fase 16.1)
+## Árvore de Pastas Padronizada (Fase 17)
 
 ```
 calc_light/
 ├── MEMORY.md                          ← RAG do projeto (este arquivo)
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                    ← FastAPI entry-point; APP_VERSION = "0.16.1"
+│   │   ├── main.py                    ← FastAPI entry-point; APP_VERSION = "0.17.0"
 │   │   ├── templates/
 │   │   │   └── modelo.xlsm            ← Planilha modelo (keep_vba=True)
 │   │   ├── domain/
@@ -36,11 +36,13 @@ calc_light/
 │   │   │   ├── excel_exporter.py      ← Motor de exportação ZIP em lotes (memory-safe)
 │   │   │   ├── calculators.py
 │   │   │   ├── models.py              ← +is_ghost: bool = False em ProjectNodeBase
-│   │   │   └── topology_service.py    ← Ghost: skip capacity, inclui tração; is_ghost no data
+│   │   │   ├── topology_service.py    ← Ghost: skip capacity, inclui tração; is_ghost no data
+│   │   │   └── solver.py              ← Heurística de flechas + teto 2000 daN (100% cov)
 │   │   ├── api/
 │   │   │   ├── routers/
-│   │   │   │   ├── gis.py             ← POST parse-file, POST import-nodes, GET outgoing-conductors
+│   │   │   │   ├── gis.py
 │   │   │   │   ├── projects.py        ← +PATCH .../ghost; export filtra is_ghost
+│   │   │   │   ├── solver.py          ← GET .../solve; POST .../solve/apply
 │   │   │   │   ├── calculations.py
 │   │   │   │   ├── catalogs.py
 │   │   │   │   ├── forces.py
@@ -49,32 +51,34 @@ calc_light/
 │   │   ├── infrastructure/
 │   │   │   └── database/
 │   │   │       ├── database.py        ← +_apply_migrations(): ADD COLUMN is_ghost
-│   │   │       └── repository.py      ← +set_node_ghost(), INSERT inclui is_ghost, bool cast
+│   │   │       └── repository.py      ← +set_node_ghost(), +update_span_sag(), bool cast
 │   │   ├── schemas/
 │   │   │   ├── gis.py
 │   │   │   ├── projects.py            ← +is_ghost em ProjectNodeBase; +NodeGhostUpdate
 │   │   │   ├── catalogs.py
 │   │   │   └── topology.py
 │   │   └── tests/
-│   │       ├── test_api.py            ← fixture +is_ghost na CREATE TABLE
+│   │       ├── test_api.py
 │   │       ├── test_ghost_node.py     ← 20 testes paranóicos ghost node
+│   │       ├── test_solver.py         ← 15 testes paranóicos (100% cov em solver.py)
 │   │       ├── test_gis_parser.py
-│   │       ├── test_graph_inheritance.py ← fixture +is_ghost na CREATE TABLE
+│   │       ├── test_graph_inheritance.py
 │   │       ├── test_excel_export.py
 │   │       ├── test_calculators.py
-│   │       ├── test_database.py       ← fixture +is_ghost na CREATE TABLE
+│   │       ├── test_database.py
 │   │       └── test_topology.py
 │   └── requirements.txt
 ├── frontend/
-│   ├── package.json                   ← version: "0.16.1"
+│   ├── package.json
 │   └── src/
 │       ├── api.ts
 │       ├── App.tsx
 │       └── components/
 │           ├── GisImportModal.tsx
 │           ├── GhostNodeModal.tsx     ← Modal "Novo Poste" vs "Nó Fantasma"
-│           ├── TopologyDiagram.tsx    ← +onConnectStart/End (drop-on-pane) + GhostNodeModal
-│           ├── CustomNode.tsx         ← Ghost: border-dashed, opacity-50, sem badge de daN
+│           ├── SolverModal.tsx        ← Modal "Otimizar Rede" com alertas extremo/crítico
+│           ├── TopologyDiagram.tsx    ← +botão "Otimizar Rede" + SolverModal
+│           ├── CustomNode.tsx         ← Ghost: border-dashed, opacity-50, sem badge
 │           ├── ExportButton.tsx
 │           └── __tests__/
 └── database/
@@ -112,7 +116,73 @@ Planilha alvo: `Ponto (1)` no `modelo.xlsm`.  Apenas inputs brutos; cálculos fi
 | `mt2_t1_*` … `mt2_t4_*`  | C38-L42| MT 2º Nível                        |
 | `bt_t1_*` … `bt_t4_*`    | C64-L68| BT                                 |
 
-## Nó Fantasma / Ghost Node (Fase 16.1)
+## Solver Global / Motor de Otimização (Fase 17)
+
+### Conceito
+O "Solver Global" é um algoritmo de otimização heurística que analisa os postes reais
+sobrecarregados e sugere ajustes nas flechas dos condutores para reduzir os esforços mecânicos.
+É um sistema "Human-in-the-loop": o motor propõe, o engenheiro decide.
+
+### Limites do Catálogo (Não Negociáveis)
+| Parâmetro | Valor |
+|---|---|
+| Mínimo catálogo | 300 daN |
+| Teto estrutural absoluto | **2 000 daN** |
+| Flecha padrão | 0,5 m |
+| Range padrão | 0,3 m a 0,9 m (step 0,1) |
+| Range extremo | 1,0 m a 1,3 m (step 0,1) |
+
+### Algoritmo (solver.py → run_solver)
+```
+Para cada nó REAL (is_ghost=False):
+  1. Calcula esforço atual via _compute_effort() (usa calculate_level_resultant)
+  2. threshold = min(nominal_capacity, 2000 daN)
+  3. Se esforço <= threshold → poste OK, skip
+  4. Se sobrecarregado:
+     a. Tenta range padrão (0.3–0.9 m): primeiro sag que baixa para ≤ 2000 daN
+        → SolverSuggestion(is_extreme=False)
+     b. Tenta range extremo (1.0–1.3 m): idem
+        → SolverSuggestion(is_extreme=True)  + ⚠️ aviso de altura do cabo
+     c. Se nada funcionar:
+        → SolverSuggestion(requires_span_break=True) 🚨
+```
+
+### Regra de Quebra de Vão (Span Break)
+Se o esforço **ultrapassa 2 000 daN e NENHUMA flecha** (mesmo 1,3 m) consegue trazer
+o esforço para ≤ 2 000 daN, o solver **não pode resolver via flecha** e retorna:
+```json
+{"node_id": 5, "current_effort": 2450.0, "requires_span_break": true,
+ "message": "Esforço de 2450.0 daN superior a 2000 daN. Impossível resolver via flecha. Necessária quebra de vão."}
+```
+O engenheiro deve adicionar um poste intermediário para dividir o vão.
+
+### API
+| Rota | Método | Descrição |
+|---|---|---|
+| `/projects/{id}/solve` | GET | Executa heurística, retorna `SolverReportOut` |
+| `/projects/{id}/solve/apply` | POST | Aplica sugestões selecionadas ao banco |
+
+### Frontend (SolverModal.tsx)
+- Botão "⚡ Otimizar Rede" na Tab 3 (overlay do canvas)
+- Modal 2.5D com tabela de sugestões
+- Linha **branca/índigo**: solvable no range padrão — checkbox habilitado
+- Linha **amarela ⚠️**: solvable no range extremo — checkbox habilitado + aviso de altura
+- Linha **vermelha 🚨**: requires_span_break — checkbox **desabilitado** + instrução clara
+- "Aplicar Sugestões": aplica apenas os selecionados que são solvable
+
+### Testes (test_solver.py — 100% cobertura em solver.py)
+| # | Cenário |
+|---|---|
+| 1 | Poste normal → sem sugestão |
+| 2 | Sobrecarregado → resolvido no range padrão (is_extreme=False) |
+| 3 | Sobrecarregado → resolvido apenas no range extremo (is_extreme=True) |
+| 4 | Tração absurda → requires_span_break=True |
+| 5 | Ghost node → ignorado pelo solver |
+| 6 | Nó sem vãos → esforço=0, sem sugestão |
+| 7 | Múltiplos nós com mix de cenários |
+| 8-15 | API: 404, projeto vazio, apply com e sem vãos |
+
+
 
 ### Conceito
 Um "Nó Fantasma" representa um poste da rede existente da concessionária que serve de condição

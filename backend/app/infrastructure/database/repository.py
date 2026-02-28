@@ -164,6 +164,32 @@ class ProjectRepository:
             conn.commit()
             return result
 
+    def update_span_sag(self, span_id: int, mt_sag_m: float | None, bt_sag_m: float | None) -> bool:
+        """Atualiza as flechas MT e/ou BT de um vão.
+
+        Usado pelo Solver Global (Fase 17) ao aplicar sugestões de otimização.
+        Retorna True se alguma linha foi atualizada, False se o span_id não existe.
+        """
+        parts = []
+        params: list = []
+        if mt_sag_m is not None:
+            parts.append("mt_sag_m = ?")
+            params.append(mt_sag_m)
+        if bt_sag_m is not None:
+            parts.append("bt_sag_m = ?")
+            params.append(bt_sag_m)
+        if not parts:
+            return False
+        params.append(span_id)
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"UPDATE node_span_configs SET {', '.join(parts)} WHERE id = ?",
+                params,
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+
     def get_outgoing_span_config(self, node_id: int) -> NodeSpanConfig | None:
         """Retorna o vão de saída mais recente do nó (source_node_id = node_id).
 

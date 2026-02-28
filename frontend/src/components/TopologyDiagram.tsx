@@ -17,13 +17,14 @@ import '@xyflow/react/dist/style.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, Zap } from 'lucide-react';
 import { api } from '../api';
 import { useUIStore } from '../store';
 import CustomNode, { type PoleNodeData } from './CustomNode';
 import CustomEdge, { type ConductorEdgeData } from './CustomEdge';
 import GisImportModal, { type ParsedPoint } from './GisImportModal';
 import GhostNodeModal, { type GhostNodeChoice } from './GhostNodeModal';
+import SolverModal from './SolverModal';
 
 // ── TIPOS DA RESPOSTA DA API ─────────────────────────────────────────────
 interface ApiNode {
@@ -395,6 +396,7 @@ export default function TopologyDiagram() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [parsedPoints, setParsedPoints] = useState<ParsedPoint[]>([]);
     const [showImportModal, setShowImportModal] = useState(false);
+    const [showSolverModal, setShowSolverModal] = useState(false);
     const [isParsing, setIsParsing] = useState(false);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -442,8 +444,20 @@ export default function TopologyDiagram() {
                 className="relative w-full rounded-2xl overflow-hidden border border-white/60 shadow-xl bg-slate-50/80"
                 style={{ minHeight: '620px', height: '70vh' }}
             >
-                {/* ── Botão Importar GIS (overlay) ────────────────────── */}
-                <div className="absolute top-3 right-3 z-10">
+                {/* ── Botões overlay: Importar GIS + Otimizar Rede ───── */}
+                <div className="absolute top-3 right-3 z-10 flex gap-2">
+                    {/* Botão Otimizar Rede */}
+                    <button
+                        onClick={() => setShowSolverModal(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-white/60 bg-white/50 backdrop-blur-md shadow-sm text-indigo-700 hover:bg-white/70 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
+                        title="Otimizar flechas dos condutores para reduzir esforços"
+                        aria-label="Otimizar Rede"
+                    >
+                        <Zap size={13} />
+                        Otimizar Rede
+                    </button>
+
+                    {/* Botão Importar GIS */}
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isParsing}
@@ -477,6 +491,13 @@ export default function TopologyDiagram() {
                     points={parsedPoints}
                     onClose={() => setShowImportModal(false)}
                     onImported={handleImported}
+                />
+            )}
+
+            {showSolverModal && (
+                <SolverModal
+                    projectId={selectedProjectId}
+                    onClose={() => setShowSolverModal(false)}
                 />
             )}
         </>

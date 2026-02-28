@@ -4,9 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Routers modulares (Arquitetura DDD - Fase 3+)
-from app.api.routers import calculations, catalogs, forces, gis, projects, topology
+from app.api.routers import calculations, catalogs, forces, gis, projects, solver, topology
 
-APP_VERSION = "0.16.1"
+APP_VERSION = "0.17.0"
 
 app = FastAPI(
     title="CACL LIGHT API",
@@ -42,6 +42,7 @@ app.include_router(gis.router)
 app.include_router(calculations.router)
 app.include_router(topology.router)
 app.include_router(forces.router)
+app.include_router(solver.router)
 
 @app.get("/health", tags=["System"])
 def health_check():
