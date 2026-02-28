@@ -1,9 +1,25 @@
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { useUIStore } from '../store';
 import { useCatalogs } from '../hooks/useCatalogs';
 import { useProjectNodes, useSaveNode, useSaveSpan } from '../hooks/useProjects';
 import { Plus, Link2, MapPin } from 'lucide-react';
 
+// ── CLASSES DE ESTILO REUTILIZÁVEIS ──────────────────────────────────────
+const focusRing = 'outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all';
+
+const inputCls = `w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700 ${focusRing}`;
+
+const selectCls = `w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700 ${focusRing}`;
+
+const selectSmCls = `w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm text-slate-700 ${focusRing}`;
+
+const inputSmCls = `w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm text-slate-700 ${focusRing}`;
+
+// Auto-seleciona o texto inteiro ao receber foco (fluxo contínuo tipo Excel)
+const onFocusSelect = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
+
+// ── TIPOS ────────────────────────────────────────────────────────────────
 interface NodeFormData {
     label: string;
     pole_id: number;
@@ -22,6 +38,7 @@ interface SpanFormData {
     angle_deg: number;
 }
 
+// ── COMPONENTE ───────────────────────────────────────────────────────────
 export default function TractionCalculator() {
     const { selectedProjectId } = useUIStore();
     const { poles, conductors } = useCatalogs();
@@ -57,9 +74,9 @@ export default function TractionCalculator() {
         }, {
             onSuccess: () => {
                 nodeForm.reset();
-                alert('Poste adicionado com sucesso!');
+                toast.success('Poste cadastrado com sucesso!');
             },
-            onError: (err) => alert('Erro ao salvar poste: ' + err.message)
+            onError: (err) => toast.error(`Erro ao salvar poste: ${err.message}`),
         });
     };
 
@@ -80,9 +97,9 @@ export default function TractionCalculator() {
         }, {
             onSuccess: () => {
                 spanForm.reset();
-                alert('Vão adicionado com sucesso!');
+                toast.success('Vão estabelecido com sucesso!');
             },
-            onError: (err) => alert('Erro ao salvar vão: ' + err.message)
+            onError: (err) => toast.error(`Erro ao salvar vão: ${err.message}`),
         });
     };
 
@@ -101,23 +118,30 @@ export default function TractionCalculator() {
 
                 <form onSubmit={nodeForm.handleSubmit(onSubmitNode)} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-1">Identificação (Label)</label>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">
+                            Identificação (Label)
+                        </label>
                         <input
-                            {...nodeForm.register("label", { required: true })}
-                            className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all font-medium"
+                            {...nodeForm.register('label', { required: true })}
+                            className={inputCls}
                             placeholder="Ex: Poste Central - P01"
+                            onFocus={onFocusSelect}
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-1">Tipo de Poste (Catálogo Light)</label>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">
+                            Tipo de Poste (Catálogo Light)
+                        </label>
                         <select
-                            {...nodeForm.register("pole_id", { required: true })}
-                            className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                            {...nodeForm.register('pole_id', { required: true })}
+                            className={selectCls}
                         >
                             <option value="">Selecione o Poste</option>
                             {poles.map(p => (
-                                <option key={p.id} value={p.id}>{p.type_name} ({p.height_m}m / {p.resistance_dan}daN)</option>
+                                <option key={p.id} value={p.id}>
+                                    {p.type_name} ({p.height_m}m / {p.resistance_dan}daN)
+                                </option>
                             ))}
                         </select>
                     </div>
@@ -125,18 +149,30 @@ export default function TractionCalculator() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-600 mb-1">Posição X</label>
-                            <input type="number" step="0.1" {...nodeForm.register("pos_x")} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2" />
+                            <input
+                                type="number"
+                                step="0.1"
+                                {...nodeForm.register('pos_x')}
+                                className={inputCls}
+                                onFocus={onFocusSelect}
+                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-600 mb-1">Posição Y</label>
-                            <input type="number" step="0.1" {...nodeForm.register("pos_y")} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2" />
+                            <input
+                                type="number"
+                                step="0.1"
+                                {...nodeForm.register('pos_y')}
+                                className={inputCls}
+                                onFocus={onFocusSelect}
+                            />
                         </div>
                     </div>
 
                     <button
                         type="submit"
                         disabled={saveNode.isPending}
-                        className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg shadow-md shadow-blue-500/30 transition-all flex items-center justify-center gap-2"
+                        className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg shadow-md shadow-blue-500/30 transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
                     >
                         {saveNode.isPending ? 'Salvando...' : <><Plus size={18} /> Cadastrar Poste</>}
                     </button>
@@ -144,7 +180,9 @@ export default function TractionCalculator() {
 
                 {/* Listed Nodes summary */}
                 <div className="mt-8 pt-6 border-t border-slate-200/50">
-                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Postes Cadastrados no Projeto ({nodes.length})</h3>
+                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                        Postes Cadastrados no Projeto ({nodes.length})
+                    </h3>
                     <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
                         {nodes.map(n => (
                             <div key={n.id} className="flex justify-between items-center text-sm p-2 rounded-md bg-white/40 border border-white">
@@ -152,7 +190,9 @@ export default function TractionCalculator() {
                                 <span className="text-xs text-slate-500">Pole ID: {n.pole_id}</span>
                             </div>
                         ))}
-                        {nodes.length === 0 && !isLoadingNodes && <p className="text-xs text-slate-400">Nenhum poste cadastrado.</p>}
+                        {nodes.length === 0 && !isLoadingNodes && (
+                            <p className="text-xs text-slate-400">Nenhum poste cadastrado.</p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -170,14 +210,20 @@ export default function TractionCalculator() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-600 mb-1">Poste Origem</label>
-                            <select {...spanForm.register("source_node_id", { required: true })} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/50">
+                            <select
+                                {...spanForm.register('source_node_id', { required: true })}
+                                className={selectCls}
+                            >
                                 <option value="">-- Selecione --</option>
                                 {nodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-600 mb-1">Poste Destino</label>
-                            <select {...spanForm.register("target_node_id", { required: true })} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/50">
+                            <select
+                                {...spanForm.register('target_node_id', { required: true })}
+                                className={selectCls}
+                            >
                                 <option value="">-- Selecione --</option>
                                 {nodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
                             </select>
@@ -189,14 +235,22 @@ export default function TractionCalculator() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-medium text-slate-500 mb-1">Condutor</label>
-                                <select {...spanForm.register("mt_conductor_id")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm">
+                                <select {...spanForm.register('mt_conductor_id')} className={selectSmCls}>
                                     <option value="">Sem Condutor MT</option>
-                                    {conductors.filter(c => c.name.includes("MT")).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    {conductors.filter(c => c.name.includes('MT')).map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-slate-500 mb-1">Flecha (m)</label>
-                                <input type="number" step="0.01" {...spanForm.register("mt_sag_m")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm" />
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    {...spanForm.register('mt_sag_m')}
+                                    className={inputSmCls}
+                                    onFocus={onFocusSelect}
+                                />
                             </div>
                         </div>
                     </div>
@@ -206,14 +260,22 @@ export default function TractionCalculator() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-medium text-slate-500 mb-1">Condutor</label>
-                                <select {...spanForm.register("bt_conductor_id")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm">
+                                <select {...spanForm.register('bt_conductor_id')} className={selectSmCls}>
                                     <option value="">Sem Condutor BT</option>
-                                    {conductors.filter(c => c.name.includes("BT")).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    {conductors.filter(c => c.name.includes('BT')).map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-slate-500 mb-1">Flecha (m)</label>
-                                <input type="number" step="0.01" {...spanForm.register("bt_sag_m")} className="w-full bg-white/70 border border-slate-200 rounded-md px-3 py-1.5 text-sm" />
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    {...spanForm.register('bt_sag_m')}
+                                    className={inputSmCls}
+                                    onFocus={onFocusSelect}
+                                />
                             </div>
                         </div>
                     </div>
@@ -221,24 +283,35 @@ export default function TractionCalculator() {
                     <div className="grid grid-cols-2 gap-4 pt-2">
                         <div>
                             <label className="block text-sm font-medium text-slate-600 mb-1">Distância do Vão (m)</label>
-                            <input type="number" step="0.1" {...spanForm.register("span_length_m", { required: true })} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2" />
+                            <input
+                                type="number"
+                                step="0.1"
+                                {...spanForm.register('span_length_m', { required: true })}
+                                className={inputCls}
+                                onFocus={onFocusSelect}
+                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-600 mb-1">Ângulo Deflexão (°)</label>
-                            <input type="number" step="1" {...spanForm.register("angle_deg", { required: true })} className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2" />
+                            <input
+                                type="number"
+                                step="1"
+                                {...spanForm.register('angle_deg', { required: true })}
+                                className={inputCls}
+                                onFocus={onFocusSelect}
+                            />
                         </div>
                     </div>
 
                     <button
                         type="submit"
                         disabled={saveSpan.isPending}
-                        className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg shadow-md shadow-indigo-500/30 transition-all flex items-center justify-center gap-2"
+                        className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg shadow-md shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
                     >
                         {saveSpan.isPending ? 'Salvando...' : <><Link2 size={18} /> Estabelecer Conexão (Vão)</>}
                     </button>
                 </form>
             </div>
-
         </div>
     );
 }

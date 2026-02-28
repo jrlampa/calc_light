@@ -1,6 +1,7 @@
 import sqlite3
-from typing import List, Optional
-from app.domain.models import Project, ProjectNode, NodeSpanConfig
+
+from app.domain.models import NodeSpanConfig, Project, ProjectNode
+
 
 class ProjectRepository:
     def __init__(self, db_path: str):
@@ -19,14 +20,14 @@ class ProjectRepository:
             conn.commit()
             return project
 
-    def get_projects(self) -> List[Project]:
+    def get_projects(self) -> list[Project]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM projects ORDER BY created_at DESC")
             rows = cursor.fetchall()
             return [Project(**dict(row)) for row in rows]
 
-    def get_project(self, project_id: int) -> Optional[Project]:
+    def get_project(self, project_id: int) -> Project | None:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
@@ -45,20 +46,20 @@ class ProjectRepository:
             conn.commit()
             return node
 
-    def get_project_nodes(self, project_id: int) -> List[ProjectNode]:
+    def get_project_nodes(self, project_id: int) -> list[ProjectNode]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM project_nodes WHERE project_id = ?", (project_id,))
             rows = cursor.fetchall()
             return [ProjectNode(**dict(row)) for row in rows]
-            
+
     def update_node_effort(self, node_id: int, effort_dan: float):
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("UPDATE project_nodes SET effort_dan = ? WHERE id = ?", (effort_dan, node_id))
             conn.commit()
 
-    def update_node_position(self, node_id: int, pos_x: float, pos_y: float) -> Optional[ProjectNode]:
+    def update_node_position(self, node_id: int, pos_x: float, pos_y: float) -> ProjectNode | None:
         """Persiste a posição XY após drag-and-drop no React Flow."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -77,16 +78,16 @@ class ProjectRepository:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO node_span_configs 
+                INSERT INTO node_span_configs
                 (source_node_id, target_node_id, mt_conductor_id, mt_sag_m, bt_conductor_id, bt_sag_m, span_length_m, angle_deg)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (span.source_node_id, span.target_node_id, span.mt_conductor_id, span.mt_sag_m, 
+            """, (span.source_node_id, span.target_node_id, span.mt_conductor_id, span.mt_sag_m,
                   span.bt_conductor_id, span.bt_sag_m, span.span_length_m, span.angle_deg))
             span.id = cursor.lastrowid
             conn.commit()
             return span
 
-    def get_span_configs_for_project(self, project_id: int) -> List[NodeSpanConfig]:
+    def get_span_configs_for_project(self, project_id: int) -> list[NodeSpanConfig]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             # Join with project_nodes to ensure they belong to the project

@@ -7,6 +7,7 @@ export interface ForceVector {
     magnitude_dan: number;
     angle_deg: number;
     level: string;
+    nominal_capacity?: number;
 }
 
 export const useNodeForces = (nodeId: number | null) => {

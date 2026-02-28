@@ -1,11 +1,15 @@
-import pytest
 import os
-from scripts.legacy_importer import LegacyImporter, normalize_name
-from domain.calculators import calculate_level_resultant
-from domain.models import CalculationInput, Conductor
+import pathlib
 
-# Caminho para a planilha legado
-EXCEL_PATH = r"C:\CALC_LIGHT\CÁLCULO DE TRAÇÃO OII-25-2249.xlsm"
+import pytest
+
+from app.domain.calculators import calculate_level_resultant
+from app.domain.models import CalculationInput, Conductor
+from app.scripts.legacy_importer import LegacyImporter, normalize_name
+
+# Caminho para a planilha legado (cross-platform, relativo à raiz do repositório)
+# Estrutura: tests/ -> app/ -> backend/ -> repo_root/
+EXCEL_PATH = str(pathlib.Path(__file__).parents[3] / "CÁLCULO DE TRAÇÃO OII-25-2249.xlsm")
 
 @pytest.fixture(scope="module")
 def importer():
@@ -32,12 +36,12 @@ def conductors_map(importer):
                 qty = 3 if row <= 13 else 1
             else:
                 qty = int(qty_val)
-            
+
             # Mensageiro (Lógica do seed_full.py)
             md, mw = 0.0, 0.0
             if any(x in name for x in ["Multiplexado", "Multiplexada", "MTX", "Armado"]):
                 md, mw = 0.0095, 0.407
-                
+
             conductors[name] = Conductor(
                 name=name,
                 diameter_m=float(ws[f"D{row}"].value or 0.0),
@@ -57,11 +61,11 @@ def test_audit_ponto_1(importer, conductors_map):
     sheet_data = importer.extract_node_data("Ponto (1)")
     inputs_excel = sheet_data["inputs"]["mt1"]
     expected = sheet_data["expected_results"]
-    
+
     # Prepara entradas para o motor Python
     calc_inputs = []
     conductor_objs = []
-    
+
     for t_key in ["t1", "t2", "t3", "t4"]:
         t_data = inputs_excel[t_key]
         if t_data["network"] and t_data["cable"]:
@@ -69,10 +73,13 @@ def test_audit_ponto_1(importer, conductors_map):
             if cable_name in conductors_map:
                 # Criamos uma cópia do condutor para aplicar propriedades específicas da rede (mensageiro)
                 cond = conductors_map[cable_name].model_copy()
+                # Usa cable_qty extraído diretamente da planilha (linha 21 da aba Ponto)
+                if t_data.get("cable_qty") is not None:
+                    cond.cable_qty = int(t_data["cable_qty"])
                 if "Compacta" in t_data["network"]:
                     cond.messenger_weight = 0.407
                     cond.messenger_diameter = 0.0095
-                
+
                 calc_inputs.append(CalculationInput(
                     span_m=float(t_data["span"] or 0.0),
                     sag_m=float(t_data["sag"] or 0.0),
@@ -85,23 +92,23 @@ def test_audit_ponto_1(importer, conductors_map):
                 conductor_objs.append(cond)
             else:
                 print(f"Cable NOT FOUND in map: '{cable_name}'")
-    
+
     # Executa cálculo no novo motor
     result = calculate_level_resultant(calc_inputs, conductor_objs)
     print(f"Resultant Calc: {result.resultant_level_dan} vs Expected: {expected['resultante_mt1_daN']}")
-    
+
     # Comparações Rigorosas (rel=1e-3 conforme Task)
     # 1. Resultante MT1 local
     assert result.resultant_level_dan == pytest.approx(expected["resultante_mt1_daN"], rel=1e-3)
-    
+
     # 2. Tração ajustada no topo
     assert result.traction_on_pole_dan == pytest.approx(expected["tracao_mt1_topo_daN"], rel=1e-3)
-    
+
     # 3. Vento no Poste (vlookup simples no Excel, mas validamos se nosso motor/db bate)
     # Nota: Aqui o motor não calcula vento no poste sozinho ainda (é somado na resultante total)
     # Validamos a resultante total calculada manualmente para bater com C140
     # No Excel C140 = SQRT(SUM(X)^2 + SUM(Y)^2) + Vento_Poste
-    
+
     total_calc = result.traction_on_pole_dan + expected["vento_poste_daN"]
     assert total_calc == pytest.approx(expected["resultante_total_daN"], rel=1e-3)
 
@@ -113,22 +120,25 @@ def test_audit_all_points(importer, conductors_map):
     for sheet in sheets:
         sheet_data = importer.extract_node_data(sheet)
         expected = sheet_data["expected_results"]
-        
+
         # Ignora se não houver cálculo de MT1 (base da auditoria atual)
         if not sheet_data["inputs"]["mt1"]["t1"]["network"]:
             continue
-            
+
         calc_inputs = []
         conductor_objs = []
-        
+
         for t_key in ["t1", "t2", "t3", "t4"]:
             t_data = sheet_data["inputs"]["mt1"][t_key]
             if t_data["network"] and t_data["cable"] in conductors_map:
                 cond = conductors_map[t_data["cable"]].model_copy()
+                # Usa cable_qty extraído diretamente da planilha (linha 21 da aba Ponto)
+                if t_data.get("cable_qty") is not None:
+                    cond.cable_qty = int(t_data["cable_qty"])
                 if "Compacta" in t_data["network"]:
                     cond.messenger_weight = 0.407
                     cond.messenger_diameter = 0.0095
-                
+
                 calc_inputs.append(CalculationInput(
                     span_m=float(t_data["span"] or 0.0),
                     sag_m=float(t_data["sag"] or 0.0),
@@ -139,7 +149,7 @@ def test_audit_all_points(importer, conductors_map):
                     level_order=1
                 ))
                 conductor_objs.append(cond)
-        
+
         if calc_inputs:
             result = calculate_level_resultant(calc_inputs, conductor_objs)
             # Verifica apenas a resultante local para todos os pontos como fumaça

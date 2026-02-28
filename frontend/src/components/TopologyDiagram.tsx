@@ -12,6 +12,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { toast } from 'sonner';
 import { api } from '../api';
 import { useUIStore } from '../store';
 import CustomNode, { type PoleNodeData } from './CustomNode';
@@ -35,9 +37,12 @@ interface ApiEdge {
     span_length_m?: number;
 }
 
+// Tamanho do passo de nudge (setas do teclado)
+const NUDGE_PX = 10;
+
 // ── COMPONENTE INTERNO (dentro do ReactFlowProvider) ─────────────────────
 function TopologyCanvas({ projectId }: { projectId: number }) {
-    const { setSelectedNodeId } = useUIStore();
+    const { selectedNodeId, setSelectedNodeId } = useUIStore();
     const nodeTypes = useMemo(() => ({ pole: CustomNode }), []);
     const edgeTypes = useMemo(() => ({ conductors: CustomEdge }), []);
 
@@ -49,14 +54,13 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
         refetchOnWindowFocus: false,
     });
 
-    // ── Mutation silenciosa: persiste posição XY após drag ───────────────
+    // ── Mutation silenciosa: persiste posição XY após drag ou nudge ──────
     const patchPosition = useMutation({
         mutationFn: ({ nodeId, pos_x, pos_y }: { nodeId: number; pos_x: number; pos_y: number }) =>
             api.patch(`/projects/${projectId}/nodes/${nodeId}/position`, { pos_x, pos_y }),
-        // Silenciosa: sem invalidação de cache para não causar re-render durante drag
     });
 
-    // ── Estado local dos nós (permite drag sem refetch) ────────────────
+    // ── Estado local dos nós (permite drag e nudge sem refetch) ─────────
     const [localNodes, setLocalNodes] = useState<Node<PoleNodeData>[]>([]);
 
     // Converte resposta da API para o formato do React Flow
@@ -71,7 +75,6 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
     }, [topology]);
 
     // Sincroniza nós da API com estado local apenas quando topologia muda
-    // (Não sobrescreve drag feito pelo usuário durante a sessão)
     useEffect(() => {
         if (apiMappedNodes.length > 0) {
             setLocalNodes(apiMappedNodes);
@@ -79,24 +82,64 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [topology]);
 
-    // ── Callback: atualiza posição local e persiste no backend ───────────────
+    // ── Callback: atualiza posição local e persiste no backend ──────────
     const onNodeDragStop = useCallback(
         (_event: React.MouseEvent, node: Node<PoleNodeData>) => {
-            // Atualiza estado local imediatamente
             setLocalNodes(prev =>
                 prev.map(n => n.id === node.id ? { ...n, position: node.position } : n)
             );
-            // Persiste silenciosamente no backend
             const nodeId = parseInt(node.id, 10);
             if (!isNaN(nodeId)) {
-                patchPosition.mutate({
-                    nodeId,
-                    pos_x: node.position.x,
-                    pos_y: node.position.y,
-                });
+                patchPosition.mutate({ nodeId, pos_x: node.position.x, pos_y: node.position.y });
             }
         },
         [patchPosition]
+    );
+
+    // ── Helper: mover nó selecionado por delta ───────────────────────────
+    const nudgeSelectedNode = useCallback(
+        (dx: number, dy: number) => {
+            if (!selectedNodeId) return;
+            const selectedIdStr = String(selectedNodeId);
+            let newPos = { x: 0, y: 0 };
+
+            setLocalNodes(prev => prev.map(n => {
+                if (n.id === selectedIdStr) {
+                    newPos = { x: n.position.x + dx, y: n.position.y + dy };
+                    return { ...n, position: newPos };
+                }
+                return n;
+            }));
+
+            patchPosition.mutate({ nodeId: selectedNodeId, pos_x: newPos.x, pos_y: newPos.y });
+        },
+        [selectedNodeId, patchPosition]
+    );
+
+    // ── Atalhos de teclado — Nudge (setas direcionais) ───────────────────
+    const nudgeOpts = { preventDefault: true, enabled: !!selectedNodeId } as const;
+    useHotkeys('up',    () => nudgeSelectedNode(0, -NUDGE_PX), nudgeOpts);
+    useHotkeys('down',  () => nudgeSelectedNode(0,  NUDGE_PX), nudgeOpts);
+    useHotkeys('left',  () => nudgeSelectedNode(-NUDGE_PX, 0), nudgeOpts);
+    useHotkeys('right', () => nudgeSelectedNode( NUDGE_PX, 0), nudgeOpts);
+
+    // ── Atalho Delete/Backspace: apagar nó selecionado ───────────────────
+    useHotkeys(
+        ['delete', 'backspace'],
+        () => {
+            if (!selectedNodeId) return;
+            const node = localNodes.find(n => n.id === String(selectedNodeId));
+            const label = (node?.data as PoleNodeData)?.label ?? `Nó ${selectedNodeId}`;
+
+            // Remove do estado local imediatamente
+            setLocalNodes(prev => prev.filter(n => n.id !== String(selectedNodeId)));
+            setSelectedNodeId(null);
+            toast.warning(`"${label}" removido da visualização.`, {
+                description: 'Para remover permanentemente, use a aba de Dados.',
+                duration: 5000,
+            });
+        },
+        { enabled: !!selectedNodeId }
     );
 
     // ── Mapeia arestas da API → Edge do React Flow ───────────────────────
@@ -158,7 +201,13 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
             onNodeDragStop={onNodeDragStop}
             onNodeClick={(_event, node) => {
                 const nodeId = parseInt(node.id, 10);
-                if (!isNaN(nodeId)) setSelectedNodeId(nodeId);
+                if (!isNaN(nodeId)) {
+                    setSelectedNodeId(nodeId);
+                    toast(`Poste selecionado: ${(node.data as PoleNodeData).label}`, {
+                        icon: '📍',
+                        duration: 2000,
+                    });
+                }
             }}
             onNodesChange={(changes: NodeChange<Node<PoleNodeData>>[]) => {
                 setLocalNodes(prev => applyNodeChanges(changes, prev));
@@ -209,7 +258,6 @@ export default function TopologyDiagram() {
             className="w-full rounded-2xl overflow-hidden border border-white/60 shadow-xl bg-slate-50/80"
             style={{ minHeight: '620px', height: '70vh' }}
         >
-            {/* ReactFlowProvider necessário para usar múltiplas instâncias ou custom hooks */}
             <ReactFlowProvider>
                 <TopologyCanvas projectId={selectedProjectId} />
             </ReactFlowProvider>

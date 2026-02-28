@@ -1,6 +1,6 @@
-import pytest
-from app.domain.models import CalculationInput, Conductor
 from app.domain.calculators import calculate_level_resultant
+from app.domain.models import CalculationInput, Conductor
+
 
 def test_traction_mt1_level():
     # Test based on the "Ponto (1)" spreadsheet logic
@@ -21,7 +21,7 @@ def test_traction_mt1_level():
         messenger_diameter=0.0095,
         messenger_weight=0.407
     )
-    
+
     c2 = Conductor(
         id=2,
         name="1/0AWG-CAA, XLPE, 13,8 kV",
@@ -32,7 +32,7 @@ def test_traction_mt1_level():
         messenger_diameter=0.0,
         messenger_weight=0.0
     )
-    
+
     # Input 1 (T1) -> Angle 0
     inp1 = CalculationInput(
         span_m=52.0,
@@ -58,7 +58,7 @@ def test_traction_mt1_level():
     )
 
     res = calculate_level_resultant([inp1, inp2], [c1, c2])
-    
+
     # Spreadsheet Resultante 1º Nível should be ~308.33 daN
     assert abs(res.resultant_level_dan - 308.33) < 0.5
 

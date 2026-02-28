@@ -1,9 +1,9 @@
 import math
-from typing import List
 
 from .models import CalculationInput, CalculationResult, Conductor
 
-def calculate_level_resultant(inputs: List[CalculationInput], conductors: List[Conductor]) -> CalculationResult:
+
+def calculate_level_resultant(inputs: list[CalculationInput], conductors: list[Conductor]) -> CalculationResult:
     """
     Implements Excel formulas for calculating wind force, tracion, components and resultant forces.
     Reference: CÁLCULO DE TRAÇÃO OII-25-2249.xlsm (Ponto (1) sheet)
@@ -12,20 +12,20 @@ def calculate_level_resultant(inputs: List[CalculationInput], conductors: List[C
     total_wind_y = 0.0
     total_comp_x = 0.0
     total_comp_y = 0.0
-    
+
     total_diameter = 0.0
     total_weight = 0.0
 
-    for calc_input, conductor in zip(inputs, conductors):
+    for calc_input, conductor in zip(inputs, conductors, strict=False):
         # Diâmetro Total: =IF(C12>0,C21*C20+C23," ")
         diam_total = conductor.cable_qty * conductor.diameter_m + conductor.messenger_diameter
-        
+
         # Peso Total: =IF(C12>0,C19*C21+C22," ")
         weight_total = conductor.weight_kg_m * conductor.cable_qty + conductor.messenger_weight
 
         # Força do vento nos condutores - X: =ROUND(C26*C14/2*C24*COS(PI()/180*C16),2)
         wind_x = round(calc_input.wind_pressure * calc_input.span_m / 2 * diam_total * math.cos(math.radians(calc_input.angle_deg)), 2)
-        
+
         # Força do vento nos condutores - Y: =ROUND(C26*C14/2*C24*SIN(PI()/180*C16),2)
         wind_y = round(calc_input.wind_pressure * calc_input.span_m / 2 * diam_total * math.sin(math.radians(calc_input.angle_deg)), 2)
 
@@ -34,17 +34,17 @@ def calculate_level_resultant(inputs: List[CalculationInput], conductors: List[C
 
         # Compx: =ROUND(C29*COS(PI()/180*C16),2)
         comp_x = round(traction * math.cos(math.radians(calc_input.angle_deg)), 2)
-        
+
         # Compy: =ROUND(C29*SIN(PI()/180*C16),2)
         comp_y = round(traction * math.sin(math.radians(calc_input.angle_deg)), 2)
-        
+
         total_wind_x += wind_x
         total_wind_y += wind_y
         total_comp_x += comp_x
         total_comp_y += comp_y
         total_diameter += diam_total
         total_weight += weight_total
-        
+
     # Resultante: =SQRT(SUM(C30:L30)^2+SUM(C31:L31)^2)+SQRT(SUM(C27:L27)^2+SUM(C28:L28)^2)
     resultant = math.sqrt(total_comp_x**2 + total_comp_y**2) + math.sqrt(total_wind_x**2 + total_wind_y**2)
 
