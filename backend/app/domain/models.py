@@ -59,6 +59,7 @@ class ProjectNodeBase(BaseModel):
     pos_x: float = 0.0
     pos_y: float = 0.0
     effort_dan: float = 0.0
+    is_ghost: bool = False
 
 class ProjectNode(ProjectNodeBase):
     id: int | None = None

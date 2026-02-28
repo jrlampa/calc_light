@@ -33,6 +33,7 @@ class ProjectNodeBase(BaseModel):
     pos_x: float = 0.0
     pos_y: float = 0.0
     effort_dan: float = 0.0
+    is_ghost: bool = False
 
     @field_validator("label")
     @classmethod
@@ -90,3 +91,8 @@ class NodePositionUpdate(BaseModel):
     """Payload enviado pelo React Flow ao soltar um nó (drag-and-drop)."""
     pos_x: float
     pos_y: float
+
+
+class NodeGhostUpdate(BaseModel):
+    """Payload para alternar a flag is_ghost de um nó."""
+    is_ghost: bool

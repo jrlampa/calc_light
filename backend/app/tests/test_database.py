@@ -33,6 +33,7 @@ def db_path():
         pos_x REAL,
         pos_y REAL,
         effort_dan REAL,
+        is_ghost INTEGER DEFAULT 0,
         FOREIGN KEY(project_id) REFERENCES projects(id)
     )
     """)

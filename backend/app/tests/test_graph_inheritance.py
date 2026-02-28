@@ -43,7 +43,8 @@ def repo():
             label TEXT,
             pos_x REAL,
             pos_y REAL,
-            effort_dan REAL
+            effort_dan REAL,
+            is_ghost INTEGER DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS node_span_configs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

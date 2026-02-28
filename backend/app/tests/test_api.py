@@ -32,7 +32,8 @@ def temp_db_path():
         label TEXT,
         pos_x REAL,
         pos_y REAL,
-        effort_dan REAL
+        effort_dan REAL,
+        is_ghost INTEGER DEFAULT 0
     )''')
     conn.execute('''CREATE TABLE IF NOT EXISTS node_span_configs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

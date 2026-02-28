@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 
@@ -9,6 +8,7 @@ from app.domain.models import Project as DomainProject
 from app.domain.models import ProjectNode as DomainProjectNode
 from app.infrastructure.database.repository import ProjectRepository
 from app.schemas.projects import (
+    NodeGhostUpdate,
     NodePositionUpdate,
     NodeSpanCreate,
     NodeSpanResponse,
@@ -62,17 +62,40 @@ def update_node_position(
         raise HTTPException(status_code=404, detail="Nó não encontrado")
     return updated
 
+
+@router.patch("/{project_id}/nodes/{node_id}/ghost", response_model=ProjectNodeResponse)
+def set_node_ghost(
+    project_id: int,
+    node_id: int,
+    payload: NodeGhostUpdate,
+    repo: ProjectRepository = Depends(get_repository),
+):
+    """Alterna a flag is_ghost de um nó do projeto.
+
+    Nós fantasmas (is_ghost=True) representam postes da rede existente
+    da concessionária: exercem tração nos postes reais do projeto mas
+    são excluídos da exportação Excel e da BOM.
+    """
+    updated = repo.set_node_ghost(node_id, payload.is_ghost)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Nó não encontrado")
+    return updated
+
+
 @router.get("/{project_id}/export/excel", tags=["Export"])
 def export_project_excel(project_id: int, repo: ProjectRepository = Depends(get_repository)):
-    """Gera e devolve um ZIP mestre com um arquivo .xlsm por poste do projeto.
+    """Gera e devolve um ZIP mestre com um arquivo .xlsm por poste REAL do projeto.
 
+    Nós fantasmas (is_ghost=True) são excluídos sumariamente da exportação.
     Lotes de até 30 arquivos são agrupados em pastas Lote_01/, Lote_02/, etc.
     """
     project = repo.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Projeto não encontrado")
 
-    nodes = repo.get_project_nodes(project_id)
+    all_nodes = repo.get_project_nodes(project_id)
+    # Excluir nós fantasmas da exportação e da BOM (regra de negócio da Fase 16.1)
+    nodes = [n for n in all_nodes if not n.is_ghost]
     if not nodes:
         raise HTTPException(status_code=400, detail="Projeto vazio, adicione postes antes de exportar")
 

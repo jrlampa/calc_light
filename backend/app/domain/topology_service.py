@@ -105,6 +105,22 @@ def build_topology_diagram(
         inputs = node_configs_map.get(node.id, [])
         conds = node_conductors_map.get(node.id, [])
 
+        # Nó Fantasma: não calcula esforço nem capacidade — exerce apenas tração nos vizinhos reais
+        if node.is_ghost:
+            topology_nodes.append(TopologyNode(
+                id=str(node.id),
+                position={"x": node.pos_x, "y": node.pos_y},
+                data={
+                    "label": node.label,
+                    "effort_dan": 0.0,
+                    "utilization_percent": 0.0,
+                    "is_overloaded": False,
+                    "nominal_capacity": 0.0,
+                    "is_ghost": True,
+                }
+            ))
+            continue
+
         total_effort = 0.0
         if inputs and conds:
             mt_in = [i for i in inputs if i.level == 'MT1']
@@ -136,6 +152,7 @@ def build_topology_diagram(
                 "utilization_percent": utilization_percent,
                 "is_overloaded": is_overloaded,
                 "nominal_capacity": nominal_capacity,
+                "is_ghost": False,
             }
         ))
 

@@ -8,8 +8,10 @@ import {
     type Edge,
     type NodeChange,
     type Connection,
+    type OnConnectStartParams,
     applyNodeChanges,
     ReactFlowProvider,
+    useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -21,6 +23,7 @@ import { useUIStore } from '../store';
 import CustomNode, { type PoleNodeData } from './CustomNode';
 import CustomEdge, { type ConductorEdgeData } from './CustomEdge';
 import GisImportModal, { type ParsedPoint } from './GisImportModal';
+import GhostNodeModal, { type GhostNodeChoice } from './GhostNodeModal';
 
 // ── TIPOS DA RESPOSTA DA API ─────────────────────────────────────────────
 interface ApiNode {
@@ -49,6 +52,12 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
     const nodeTypes = useMemo(() => ({ pole: CustomNode }), []);
     const edgeTypes = useMemo(() => ({ conductors: CustomEdge }), []);
     const queryClient = useQueryClient();
+    const { screenToFlowPosition } = useReactFlow();
+
+    // ── Estado para modal de Ghost Node (drop-on-pane) ───────────────────
+    const [showGhostModal, setShowGhostModal] = useState(false);
+    const connectSourceRef = useRef<string | null>(null);
+    const connectDropPosRef = useRef<{ x: number; y: number }>({ x: 200, y: 200 });
 
     // ── Fetch da topologia calculada pelo Smart Backend ──────────────────
     const { data: topology, isLoading, isError } = useQuery({
@@ -173,6 +182,79 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
         [projectId, queryClient]
     );
 
+    // ── Drop-on-Pane: captura nó de origem da aresta ─────────────────────
+    const onConnectStart = useCallback((_: React.MouseEvent | React.TouchEvent, params: OnConnectStartParams) => {
+        connectSourceRef.current = params.nodeId ?? null;
+    }, []);
+
+    // ── Drop-on-Pane: abre modal se aresta foi solta sem destino ─────────
+    const onConnectEnd = useCallback(
+        (event: MouseEvent | TouchEvent) => {
+            if (!connectSourceRef.current) return;
+            const target = event.target as Element;
+            // Se o evento ocorreu num handle ou num nó, não é drop-on-pane
+            if (target.closest('.react-flow__node') || target.closest('.react-flow__handle')) return;
+
+            // Captura posição em coordenadas do flow para posicionar o novo nó
+            // TouchEvent usa changedTouches[0] (touches[] fica vazio no touchend)
+            const clientX = 'changedTouches' in event
+                ? (event as TouchEvent).changedTouches[0].clientX
+                : (event as MouseEvent).clientX;
+            const clientY = 'changedTouches' in event
+                ? (event as TouchEvent).changedTouches[0].clientY
+                : (event as MouseEvent).clientY;
+            connectDropPosRef.current = screenToFlowPosition({ x: clientX, y: clientY });
+
+            setShowGhostModal(true);
+        },
+        [screenToFlowPosition]
+    );
+
+    // ── Criar nó (real ou ghost) após escolha do modal ───────────────────
+    const handleGhostChoice = useCallback(
+        async (choice: GhostNodeChoice) => {
+            setShowGhostModal(false);
+            const sourceId = connectSourceRef.current;
+            if (!sourceId) return;
+
+            const isGhost = choice === 'ghost';
+            const label = isGhost ? 'Rede Existente' : 'Novo Poste';
+            const { x, y } = connectDropPosRef.current;
+
+            try {
+                // 1. Criar o nó destino
+                const nodeRes = await api.post(`/projects/${projectId}/nodes`, {
+                    project_id: projectId,
+                    pole_id: 0,
+                    label,
+                    pos_x: x,
+                    pos_y: y,
+                    is_ghost: isGhost,
+                });
+                const targetId = nodeRes.data.id;
+
+                // 2. Criar aresta source → novo nó (sem condutores)
+                await api.post(`/projects/${projectId}/edges`, {
+                    source_node_id: parseInt(sourceId, 10),
+                    target_node_id: targetId,
+                    span_length_m: 50.0,
+                    angle_deg: 0.0,
+                });
+
+                queryClient.invalidateQueries({ queryKey: ['topology', projectId] });
+                toast.success(isGhost
+                    ? 'Nó Fantasma (Rede Existente) criado e conectado.'
+                    : 'Novo Poste criado e conectado. Configure os cabos na aba de Dados.'
+                );
+            } catch {
+                toast.error('Erro ao criar nó. Tente novamente.');
+            } finally {
+                connectSourceRef.current = null;
+            }
+        },
+        [projectId, queryClient]
+    );
+
     // ── Atalhos de teclado — Nudge (setas direcionais) ───────────────────
     const nudgeOpts = { preventDefault: true, enabled: !!selectedNodeId } as const;
     useHotkeys('up',    () => nudgeSelectedNode(0, -NUDGE_PX), nudgeOpts);
@@ -250,13 +332,16 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
     }
 
     return (
-        <ReactFlow
-            nodes={localNodes}
-            edges={reactFlowEdges}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            onNodeDragStop={onNodeDragStop}
-            onConnect={onConnect}
+        <>
+            <ReactFlow
+                nodes={localNodes}
+                edges={reactFlowEdges}
+                nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
+                onNodeDragStop={onNodeDragStop}
+                onConnect={onConnect}
+                onConnectStart={onConnectStart}
+                onConnectEnd={onConnectEnd}
             onNodeClick={(_event, node) => {
                 const nodeId = parseInt(node.id, 10);
                 if (!isNaN(nodeId)) {
@@ -291,7 +376,15 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
                 className="!bg-white/80 !border-slate-200 !rounded-lg !shadow-md"
                 maskColor="rgba(148,163,184,0.1)"
             />
-        </ReactFlow>
+            </ReactFlow>
+
+            {showGhostModal && (
+                <GhostNodeModal
+                    onChoose={handleGhostChoice}
+                    onClose={() => { setShowGhostModal(false); connectSourceRef.current = null; }}
+                />
+            )}
+        </>
     );
 }
 

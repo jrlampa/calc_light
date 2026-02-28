@@ -4,7 +4,7 @@
 
 O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado para substituir planilhas complexas de engenharia elétrica (como "CÁLCULO DE TRAÇÃO OII-25-2249.xlsm" e "POSTE69.xlsm"). O objetivo é realizar o cálculo de esforços mecânicos em postes de distribuição de energia, garantindo precisão idêntica à planilha original.
 
-**Versão atual:** `0.16.0` (Fase 16 — Motor GIS + Herança de Condutores)
+**Versão atual:** `0.16.1` (Fase 16.1 — Nó Fantasma / Ghost Node)
 
 ## Regras e Arquitetura (Não Negociáveis)
 
@@ -20,14 +20,14 @@ O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado
 8. **Infraestrutura:** Docker First. Manter `.gitignore`, `.dockerignore` e `docker-compose.yml` atualizados.
 9. **BIM:** Integração Half-way BIM na geração de arquivos .dxf (via accoreconsole.exe de modo headless para testes).
 
-## Árvore de Pastas Padronizada (Fase 16)
+## Árvore de Pastas Padronizada (Fase 16.1)
 
 ```
 calc_light/
 ├── MEMORY.md                          ← RAG do projeto (este arquivo)
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                    ← FastAPI entry-point; APP_VERSION = "0.16.0"
+│   │   ├── main.py                    ← FastAPI entry-point; APP_VERSION = "0.16.1"
 │   │   ├── templates/
 │   │   │   └── modelo.xlsm            ← Planilha modelo (keep_vba=True)
 │   │   ├── domain/
@@ -35,12 +35,12 @@ calc_light/
 │   │   │   ├── excel_mapping.py       ← Dicionário estrito de células de entrada
 │   │   │   ├── excel_exporter.py      ← Motor de exportação ZIP em lotes (memory-safe)
 │   │   │   ├── calculators.py
-│   │   │   ├── models.py
-│   │   │   └── topology_service.py
+│   │   │   ├── models.py              ← +is_ghost: bool = False em ProjectNodeBase
+│   │   │   └── topology_service.py    ← Ghost: skip capacity, inclui tração; is_ghost no data
 │   │   ├── api/
 │   │   │   ├── routers/
 │   │   │   │   ├── gis.py             ← POST parse-file, POST import-nodes, GET outgoing-conductors
-│   │   │   │   ├── projects.py        ← Inclui GET /{id}/export/excel; HTTP 400 para projeto vazio
+│   │   │   │   ├── projects.py        ← +PATCH .../ghost; export filtra is_ghost
 │   │   │   │   ├── calculations.py
 │   │   │   │   ├── catalogs.py
 │   │   │   │   ├── forces.py
@@ -48,30 +48,33 @@ calc_light/
 │   │   │   └── dependencies.py
 │   │   ├── infrastructure/
 │   │   │   └── database/
-│   │   │       ├── database.py
-│   │   │       └── repository.py      ← +import_nodes_atomic, +get_outgoing_span_config
+│   │   │       ├── database.py        ← +_apply_migrations(): ADD COLUMN is_ghost
+│   │   │       └── repository.py      ← +set_node_ghost(), INSERT inclui is_ghost, bool cast
 │   │   ├── schemas/
-│   │   │   ├── gis.py                 ← ParsedPointResponse, ImportNodesRequest, OutgoingConductorsResponse
-│   │   │   ├── projects.py
+│   │   │   ├── gis.py
+│   │   │   ├── projects.py            ← +is_ghost em ProjectNodeBase; +NodeGhostUpdate
 │   │   │   ├── catalogs.py
 │   │   │   └── topology.py
 │   │   └── tests/
-│   │       ├── test_api.py
-│   │       ├── test_gis_parser.py     ← 62 testes paranóicos (100% cov em gis_parser.py)
-│   │       ├── test_graph_inheritance.py ← Herança de condutores + importação atômica
+│   │       ├── test_api.py            ← fixture +is_ghost na CREATE TABLE
+│   │       ├── test_ghost_node.py     ← 20 testes paranóicos ghost node
+│   │       ├── test_gis_parser.py
+│   │       ├── test_graph_inheritance.py ← fixture +is_ghost na CREATE TABLE
 │   │       ├── test_excel_export.py
 │   │       ├── test_calculators.py
-│   │       ├── test_database.py
+│   │       ├── test_database.py       ← fixture +is_ghost na CREATE TABLE
 │   │       └── test_topology.py
-│   └── requirements.txt               ← +python-multipart (suporte a upload de arquivo)
+│   └── requirements.txt
 ├── frontend/
-│   ├── package.json                   ← version: "0.16.0"
+│   ├── package.json                   ← version: "0.16.1"
 │   └── src/
 │       ├── api.ts
 │       ├── App.tsx
 │       └── components/
-│           ├── GisImportModal.tsx     ← Modal 2.5D: lista de pontos + checkboxes + import
-│           ├── TopologyDiagram.tsx    ← +onConnect (herança) + botão "Importar GIS"
+│           ├── GisImportModal.tsx
+│           ├── GhostNodeModal.tsx     ← Modal "Novo Poste" vs "Nó Fantasma"
+│           ├── TopologyDiagram.tsx    ← +onConnectStart/End (drop-on-pane) + GhostNodeModal
+│           ├── CustomNode.tsx         ← Ghost: border-dashed, opacity-50, sem badge de daN
 │           ├── ExportButton.tsx
 │           └── __tests__/
 └── database/
@@ -109,7 +112,65 @@ Planilha alvo: `Ponto (1)` no `modelo.xlsm`.  Apenas inputs brutos; cálculos fi
 | `mt2_t1_*` … `mt2_t4_*`  | C38-L42| MT 2º Nível                        |
 | `bt_t1_*` … `bt_t4_*`    | C64-L68| BT                                 |
 
-## Motor GIS de Parsing (gis_parser.py) — Fase 16
+## Nó Fantasma / Ghost Node (Fase 16.1)
+
+### Conceito
+Um "Nó Fantasma" representa um poste da rede existente da concessionária que serve de condição
+de contorno (boundary condition) para o projeto. Ele **exerce tração mecânica** nos postes reais
+do projeto através dos vãos que os conectam, mas **não é calculado, listado na BOM nem exportado**.
+
+### Flag `is_ghost`
+- **Tabela:** `project_nodes.is_ghost INTEGER DEFAULT 0`
+- **Migração:** executada automaticamente em `database.py → _apply_migrations()` ao abrir conexão
+- **Modelo:** `ProjectNode.is_ghost: bool = False` (domínio) e `ProjectNodeResponse.is_ghost: bool`
+
+### Regras de Negócio (Não Negociáveis)
+1. **Motor de Cálculo (topology_service.py):**
+   - Vãos que conectam um poste real a um nó fantasma **contribuem com tração no poste real**
+     (via `node_configs_map` para o `source_node_id` / `target_node_id`)
+   - Para o próprio nó fantasma, o motor **NÃO computa** `effort_dan`, `utilization_percent`,
+     `is_overloaded` nem `nominal_capacity` (todos ficam 0/False)
+   - O nó fantasma **aparece no diagrama** (necessário para visualizar as arestas dos vãos)
+   - `data["is_ghost"] = True` no payload do `TopologyNode`
+
+2. **Exportação Excel / BOM:**
+   - `nodes = [n for n in all_nodes if not n.is_ghost]` antes de qualquer iteração
+   - Se após filtrar não sobrarem nós reais → HTTP 400 "Projeto vazio"
+   - Nenhuma referência ao nó fantasma aparece no ZIP de exportação
+
+3. **API:**
+   - `PATCH /projects/{id}/nodes/{nid}/ghost` com `{ "is_ghost": true|false }` → toggle a flag
+   - `POST /projects/{id}/nodes` com `"is_ghost": true` → cria diretamente como fantasma
+   - `GET /topology/project/{id}` → inclui nós fantasmas no payload (para exibição) com `is_ghost=True`
+
+### Visual no React Flow (CustomNode.tsx)
+- `is_ghost=True`:
+  - Opacidade **50%** (intencional — é "invisível" no senso que não pertence ao projeto)
+  - Borda **tracejada** (`border-dashed border-slate-400/60`), paleta **cinza**
+  - **SEM** badge de esforço (daN) — ghost não tem esforço calculado
+  - Rótulo "Rede Existente" em lugar da badge
+  - Tooltip explica o conceito ao engenheiro
+- `is_ghost=False`: visual normal existente (Glassmorphism azul)
+
+### Interação Drop-on-Pane (TopologyDiagram.tsx)
+Quando o usuário arrasta a ponta de uma aresta e solta no **fundo do canvas** (sem nó destino):
+1. `onConnectStart` captura `params.nodeId` (nó origem) em `connectSourceRef`
+2. `onConnectEnd` verifica se o target foi o pane (não um nó/handle)
+3. Abre `GhostNodeModal.tsx` com 2 opções:
+   - **"Novo Poste"** → `POST /projects/{id}/nodes` + `POST /projects/{id}/edges` (is_ghost=false)
+   - **"Nó Fantasma (Rede Existente)"** → idem com `is_ghost=true`
+4. Novo nó é posicionado nas coordenadas do canvas onde o mouse foi solto
+
+### Testes Paranóicos (test_ghost_node.py)
+| Classe | Cenários |
+|---|---|
+| `TestGhostFlagPersistence` | DB salva/lê 0/1 corretamente; `get_project_nodes` converte para bool |
+| `TestSetNodeGhost` | toggle true, toggle false, nó inexistente → None |
+| `TestTopologyGhostBehavior` | ghost data["is_ghost"]=True; effort=0; P1 recebe tração de vão com ghost; real data["is_ghost"]=False; ghost aparece no diagrama |
+| `TestExportGhostFilter` | ghost excluído da lista; lista com só ghosts → vazia |
+| `TestGhostNodeAPI` | PATCH ghost=true/false; PATCH 404; export exclui ghost (ZIP tem 1 arquivo); export all-ghost → 400 |
+
+
 
 - **Formatos suportados:** `.kml`, `.kmz`, `.geojson`, `.json`, `.xlsx`, `.xls`
 - **Zero dependências C++:** usa apenas stdlib (`json`, `xml.etree`, `zipfile`, `io`) + `openpyxl`

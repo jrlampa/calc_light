@@ -39,9 +39,10 @@ class ProjectRepository:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO project_nodes (project_id, pole_id, label, pos_x, pos_y, effort_dan)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (node.project_id, node.pole_id, node.label, node.pos_x, node.pos_y, node.effort_dan))
+                INSERT INTO project_nodes (project_id, pole_id, label, pos_x, pos_y, effort_dan, is_ghost)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (node.project_id, node.pole_id, node.label, node.pos_x, node.pos_y, node.effort_dan,
+                  1 if node.is_ghost else 0))
             node.id = cursor.lastrowid
             conn.commit()
             return node
@@ -51,7 +52,12 @@ class ProjectRepository:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM project_nodes WHERE project_id = ?", (project_id,))
             rows = cursor.fetchall()
-            return [ProjectNode(**dict(row)) for row in rows]
+            result = []
+            for row in rows:
+                d = dict(row)
+                d["is_ghost"] = bool(d.get("is_ghost", 0))
+                result.append(ProjectNode(**d))
+            return result
 
     def update_node_effort(self, node_id: int, effort_dan: float):
         with self._get_connection() as conn:
@@ -70,7 +76,32 @@ class ProjectRepository:
             conn.commit()
             cursor.execute("SELECT * FROM project_nodes WHERE id = ?", (node_id,))
             row = cursor.fetchone()
-            return ProjectNode(**dict(row)) if row else None
+            if not row:
+                return None
+            d = dict(row)
+            d["is_ghost"] = bool(d.get("is_ghost", 0))
+            return ProjectNode(**d)
+
+    def set_node_ghost(self, node_id: int, is_ghost: bool) -> ProjectNode | None:
+        """Alterna a flag is_ghost de um nó.
+
+        Nós fantasmas exercem tração sobre postes reais mas são excluídos
+        dos relatórios de exportação e da BOM.
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE project_nodes SET is_ghost = ? WHERE id = ?",
+                (1 if is_ghost else 0, node_id)
+            )
+            conn.commit()
+            cursor.execute("SELECT * FROM project_nodes WHERE id = ?", (node_id,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            d = dict(row)
+            d["is_ghost"] = bool(d.get("is_ghost", 0))
+            return ProjectNode(**d)
 
 
     # --- Node Span Configs (Edges) ---
@@ -122,10 +153,11 @@ class ProjectRepository:
             for node in nodes:
                 cursor.execute(
                     """
-                    INSERT INTO project_nodes (project_id, pole_id, label, pos_x, pos_y, effort_dan)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO project_nodes (project_id, pole_id, label, pos_x, pos_y, effort_dan, is_ghost)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (node.project_id, node.pole_id, node.label, node.pos_x, node.pos_y, node.effort_dan),
+                    (node.project_id, node.pole_id, node.label, node.pos_x, node.pos_y,
+                     node.effort_dan, 1 if node.is_ghost else 0),
                 )
                 node.id = cursor.lastrowid
                 result.append(node)
