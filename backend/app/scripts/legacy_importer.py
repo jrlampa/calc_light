@@ -75,10 +75,10 @@ class LegacyImporter:
             },
             "inputs": {
                 "mt1": {
-                    "t1": {"network": normalize_name(ws["C12"].value), "cable": normalize_name(ws["C13"].value), "span": ws["C14"].value, "sag": ws["C15"].value, "angle": ws["C16"].value},
-                    "t2": {"network": normalize_name(ws["F12"].value), "cable": normalize_name(ws["F13"].value), "span": ws["F14"].value, "sag": ws["F15"].value, "angle": ws["F16"].value},
-                    "t3": {"network": normalize_name(ws["I12"].value), "cable": normalize_name(ws["I13"].value), "span": ws["I14"].value, "sag": ws["I15"].value, "angle": ws["I16"].value},
-                    "t4": {"network": normalize_name(ws["L12"].value), "cable": normalize_name(ws["L13"].value), "span": ws["L14"].value, "sag": ws["L15"].value, "angle": ws["L16"].value},
+                    "t1": {"network": normalize_name(ws["C12"].value), "cable": normalize_name(ws["C13"].value), "span": ws["C14"].value, "sag": ws["C15"].value, "angle": ws["C16"].value, "cable_qty": ws["C21"].value},
+                    "t2": {"network": normalize_name(ws["F12"].value), "cable": normalize_name(ws["F13"].value), "span": ws["F14"].value, "sag": ws["F15"].value, "angle": ws["F16"].value, "cable_qty": ws["F21"].value},
+                    "t3": {"network": normalize_name(ws["I12"].value), "cable": normalize_name(ws["I13"].value), "span": ws["I14"].value, "sag": ws["I15"].value, "angle": ws["I16"].value, "cable_qty": ws["I21"].value},
+                    "t4": {"network": normalize_name(ws["L12"].value), "cable": normalize_name(ws["L13"].value), "span": ws["L14"].value, "sag": ws["L15"].value, "angle": ws["L16"].value, "cable_qty": ws["L21"].value},
                 },
                 "pole_height": ws["C17"].value,
                 "anchorage_height": ws["C18"].value
@@ -102,7 +102,9 @@ class LegacyImporter:
 if __name__ == "__main__":
     # Teste rápido de extração
     import os
-    xlsm_path = r"C:\CALC_LIGHT\CÁLCULO DE TRAÇÃO OII-25-2249.xlsm"
+    import pathlib
+    # Repo root is 3 levels up: scripts/ -> app/ -> backend/ -> repo root
+    xlsm_path = str(pathlib.Path(__file__).parents[3] / "CÁLCULO DE TRAÇÃO OII-25-2249.xlsm")
     if os.path.exists(xlsm_path):
         importer = LegacyImporter(xlsm_path)
         importer.open_workbook()

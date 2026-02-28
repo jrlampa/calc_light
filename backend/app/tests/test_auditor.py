@@ -1,11 +1,13 @@
 import pytest
 import os
-from scripts.legacy_importer import LegacyImporter, normalize_name
-from domain.calculators import calculate_level_resultant
-from domain.models import CalculationInput, Conductor
+import pathlib
+from app.scripts.legacy_importer import LegacyImporter, normalize_name
+from app.domain.calculators import calculate_level_resultant
+from app.domain.models import CalculationInput, Conductor
 
-# Caminho para a planilha legado
-EXCEL_PATH = r"C:\CALC_LIGHT\CÁLCULO DE TRAÇÃO OII-25-2249.xlsm"
+# Caminho para a planilha legado (cross-platform, relativo à raiz do repositório)
+# Estrutura: tests/ -> app/ -> backend/ -> repo_root/
+EXCEL_PATH = str(pathlib.Path(__file__).parents[3] / "CÁLCULO DE TRAÇÃO OII-25-2249.xlsm")
 
 @pytest.fixture(scope="module")
 def importer():
@@ -69,6 +71,9 @@ def test_audit_ponto_1(importer, conductors_map):
             if cable_name in conductors_map:
                 # Criamos uma cópia do condutor para aplicar propriedades específicas da rede (mensageiro)
                 cond = conductors_map[cable_name].model_copy()
+                # Usa cable_qty extraído diretamente da planilha (linha 21 da aba Ponto)
+                if t_data.get("cable_qty") is not None:
+                    cond.cable_qty = int(t_data["cable_qty"])
                 if "Compacta" in t_data["network"]:
                     cond.messenger_weight = 0.407
                     cond.messenger_diameter = 0.0095
@@ -125,6 +130,9 @@ def test_audit_all_points(importer, conductors_map):
             t_data = sheet_data["inputs"]["mt1"][t_key]
             if t_data["network"] and t_data["cable"] in conductors_map:
                 cond = conductors_map[t_data["cable"]].model_copy()
+                # Usa cable_qty extraído diretamente da planilha (linha 21 da aba Ponto)
+                if t_data.get("cable_qty") is not None:
+                    cond.cable_qty = int(t_data["cable_qty"])
                 if "Compacta" in t_data["network"]:
                     cond.messenger_weight = 0.407
                     cond.messenger_diameter = 0.0095
