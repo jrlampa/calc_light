@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
 import { AlertTriangle, X } from 'lucide-react';
-import { useUIStore } from './store';
+import { useUIStore, useTopologyHistoryStore } from './store';
 import { FileText, Activity, Network, Plus, FolderOpen } from 'lucide-react';
 import TractionCalculator from './components/TractionCalculator';
 import TopologyDiagram from './components/TopologyDiagram';
@@ -11,9 +11,63 @@ import ForceDiagram from './components/ForceDiagram';
 import Layout from './components/Layout';
 import ShortcutsModal from './components/ShortcutsModal';
 import ExportButton from './components/ExportButton';
+import RecoveryModal from './components/RecoveryModal';
 import { api, downloadProjectExcel } from './api';
 
-// ── MODAL DE NOVO PROJETO ────────────────────────────────────────────────
+// ── Auto-save key helpers ─────────────────────────────────────────────────
+
+const backupKey = (projectId: number) => `cacl_backup_${projectId}`;
+
+interface LocalBackup {
+    savedAt: string; // ISO timestamp
+    projectId: number;
+    nodes: unknown[];
+    edges: unknown[];
+}
+
+function saveToLocalStorage(projectId: number, nodes: unknown[], edges: unknown[]) {
+    const backup: LocalBackup = {
+        savedAt: new Date().toISOString(),
+        projectId,
+        nodes,
+        edges,
+    };
+    try {
+        localStorage.setItem(backupKey(projectId), JSON.stringify(backup));
+    } catch {
+        // localStorage quota exceeded — silently skip
+    }
+}
+
+function loadFromLocalStorage(projectId: number): LocalBackup | null {
+    try {
+        const raw = localStorage.getItem(backupKey(projectId));
+        return raw ? (JSON.parse(raw) as LocalBackup) : null;
+    } catch {
+        return null;
+    }
+}
+
+// ── Debounce helper ───────────────────────────────────────────────────────
+
+function useDebounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): T {
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const fnRef = useRef<T>(fn);
+    // Keep fnRef up-to-date without resetting the timer
+    fnRef.current = fn;
+    const debounced = useCallback(
+        (...args: Parameters<T>) => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => fnRef.current(...args), delay);
+        },
+        // delay is intentionally the only dep — fnRef handles fn updates without creating a new timer
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [delay]
+    );
+    return debounced as T;
+}
+
+// ── MODAL DE NOVO PROJETO ─────────────────────────────────────────────────
 function NewProjectModal({ onConfirm, onClose }: { onConfirm: (name: string) => void; onClose: () => void }) {
   const [name, setName] = useState('');
 
@@ -67,14 +121,23 @@ function NewProjectModal({ onConfirm, onClose }: { onConfirm: (name: string) => 
   );
 }
 
-// ── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────
+// ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────
 function App() {
-  const { activeTab, setActiveTab, selectedProjectId, setSelectedProjectId, overloadedNodeIds, setOverloadedNodeIds, highlightOverloaded, setHighlightOverloaded } = useUIStore();
+  const {
+    activeTab, setActiveTab,
+    selectedProjectId, setSelectedProjectId,
+    overloadedNodeIds, setOverloadedNodeIds,
+    highlightOverloaded, setHighlightOverloaded,
+    setSyncStatus, setLastLocalSaveAt,
+  } = useUIStore();
   const queryClient = useQueryClient();
 
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+
+  // ── Disaster Recovery state (Phase 18) ──────────────────────────────
+  const [recoveryBackup, setRecoveryBackup] = useState<{ savedAt: string; backup: LocalBackup } | null>(null);
 
   // Fetch Projects List
   const { data: projects = [], isLoading } = useQuery({
@@ -103,6 +166,77 @@ function App() {
     setOverloadedNodeIds(overloaded);
   }, [topology, setOverloadedNodeIds]);
 
+  // ── Auto-Save: subscribe to topology history changes (Phase 18) ──────
+  const debouncedSave = useDebounce(
+    useCallback(
+      (projectId: number, nodes: unknown[], edges: unknown[]) => {
+        saveToLocalStorage(projectId, nodes, edges);
+        const ts = new Date().toISOString();
+        setLastLocalSaveAt(ts);
+        setSyncStatus('saved');
+      },
+      [setLastLocalSaveAt, setSyncStatus]
+    ),
+    1500
+  );
+
+  useEffect(() => {
+    // Subscribe to topology history store changes
+    const unsub = useTopologyHistoryStore.subscribe((state) => {
+      if (!state.projectId || state.nodes.length === 0) return;
+      setSyncStatus('saving');
+      debouncedSave(state.projectId, state.nodes, state.edges);
+    });
+    return unsub;
+  }, [debouncedSave, setSyncStatus]);
+
+  // ── Disaster Recovery: check on project select (Phase 18) ───────────
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setRecoveryBackup(null);
+      return;
+    }
+
+    const backup = loadFromLocalStorage(selectedProjectId);
+    if (!backup) return;
+
+    // Compare with server project updated_at
+    const projectData = (Array.isArray(projects) ? projects : []).find(
+      (p: { id: number; updated_at?: string }) => p.id === selectedProjectId
+    );
+    if (!projectData?.updated_at) return;
+
+    const serverTs = new Date(projectData.updated_at).getTime();
+    const localTs = new Date(backup.savedAt).getTime();
+
+    if (localTs > serverTs) {
+      setRecoveryBackup({ savedAt: backup.savedAt, backup });
+    } else {
+      setRecoveryBackup(null);
+    }
+  }, [selectedProjectId, projects]);
+
+  const handleRecoverLocal = useCallback(() => {
+    if (!recoveryBackup || !selectedProjectId) return;
+    // Restore the topology history store from the backup so TopologyCanvas syncs
+    const { setTopologySnapshot } = useTopologyHistoryStore.getState();
+    setTopologySnapshot(
+      selectedProjectId,
+      recoveryBackup.backup.nodes as import('./store').PersistedNode[],
+      recoveryBackup.backup.edges as import('./store').PersistedEdge[]
+    );
+    setRecoveryBackup(null);
+    toast.success('Versão local recuperada com sucesso!');
+  }, [recoveryBackup, selectedProjectId]);
+
+  const handleDiscardLocal = useCallback(() => {
+    if (selectedProjectId) {
+      try { localStorage.removeItem(backupKey(selectedProjectId)); } catch { /* ignore */ }
+    }
+    setRecoveryBackup(null);
+    toast('Versão da nuvem carregada.', { icon: '☁️' });
+  }, [selectedProjectId]);
+
   // Create Project Mutation
   const createProjectMutation = useMutation({
     mutationFn: (name: string) => api.post('/projects', { name }).then(res => res.data),
@@ -116,9 +250,33 @@ function App() {
 
   // ── Atalhos Globais ──────────────────────────────────────────────────
   // Alt+1/2/3: navegar entre abas
-  useHotkeys('alt+1', () => { setActiveTab('data');     toast('Aba 1: Entrada de Dados', { icon: '��' }); }, { preventDefault: true });
+  useHotkeys('alt+1', () => { setActiveTab('data');     toast('Aba 1: Entrada de Dados', { icon: '📋' }); }, { preventDefault: true });
   useHotkeys('alt+2', () => { setActiveTab('forces');   toast('Aba 2: Diagrama de Forças', { icon: '⚡' }); }, { preventDefault: true });
   useHotkeys('alt+3', () => { setActiveTab('topology'); toast('Aba 3: Unifilar Topológico', { icon: '🗺️' }); }, { preventDefault: true });
+
+  // Ctrl+Z: Desfazer (Undo) — Phase 18
+  useHotkeys('ctrl+z', (e) => {
+    e.preventDefault();
+    const { undo, pastStates } = useTopologyHistoryStore.temporal.getState();
+    if (pastStates.length === 0) {
+      toast('Nada para desfazer.', { icon: '↩️' });
+      return;
+    }
+    undo();
+    toast('Desfeito.', { icon: '↩️' });
+  }, { preventDefault: true });
+
+  // Ctrl+Y / Ctrl+Shift+Z: Refazer (Redo) — Phase 18
+  useHotkeys('ctrl+y,ctrl+shift+z', (e) => {
+    e.preventDefault();
+    const { redo, futureStates } = useTopologyHistoryStore.temporal.getState();
+    if (futureStates.length === 0) {
+      toast('Nada para refazer.', { icon: '↪️' });
+      return;
+    }
+    redo();
+    toast('Refeito.', { icon: '↪️' });
+  }, { preventDefault: true });
 
   // Ctrl+S: acionar submit do formulário ativo na Aba 1
   useHotkeys('ctrl+s', (e) => {
@@ -131,6 +289,8 @@ function App() {
     } else {
       toast('Ctrl+S disponível apenas na Aba de Dados.', { icon: 'ℹ️' });
     }
+    // Mark as synced (manual save to API)
+    setSyncStatus('synced');
   }, { preventDefault: true });
 
   // Shift+?: abrir/fechar mapa de atalhos
@@ -330,6 +490,15 @@ function App() {
         <NewProjectModal
           onConfirm={(name) => createProjectMutation.mutate(name)}
           onClose={() => setIsNewProjectOpen(false)}
+        />
+      )}
+
+      {/* Modal de Recuperação de Desastres (Phase 18) */}
+      {recoveryBackup && (
+        <RecoveryModal
+          savedAt={recoveryBackup.savedAt}
+          onRecover={handleRecoverLocal}
+          onDiscard={handleDiscardLocal}
         />
       )}
     </>

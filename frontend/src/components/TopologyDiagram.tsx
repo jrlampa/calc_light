@@ -19,7 +19,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
 import { Loader2, Upload, Zap } from 'lucide-react';
 import { api } from '../api';
-import { useUIStore } from '../store';
+import { useUIStore, useTopologyHistoryStore, type PersistedNode, type PersistedEdge } from '../store';
 import CustomNode, { type PoleNodeData } from './CustomNode';
 import CustomEdge, { type ConductorEdgeData } from './CustomEdge';
 import GisImportModal, { type ParsedPoint } from './GisImportModal';
@@ -47,6 +47,16 @@ interface ApiEdge {
 // Tamanho do passo de nudge (setas do teclado)
 const NUDGE_PX = 10;
 
+// ── Helpers de serialização (fora do componente — estáveis) ───────────────
+
+function toPersistedNode(n: Node<PoleNodeData>): PersistedNode {
+    return { id: n.id, position: n.position, data: n.data as Record<string, unknown> };
+}
+
+function toPersistedEdge(e: ApiEdge): PersistedEdge {
+    return { id: e.id, source: e.source, target: e.target, mt_label: e.mt_label, bt_label: e.bt_label };
+}
+
 // ── COMPONENTE INTERNO (dentro do ReactFlowProvider) ─────────────────────
 function TopologyCanvas({ projectId }: { projectId: number }) {
     const { selectedNodeId, setSelectedNodeId } = useUIStore();
@@ -54,6 +64,12 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
     const edgeTypes = useMemo(() => ({ conductors: CustomEdge }), []);
     const queryClient = useQueryClient();
     const { screenToFlowPosition } = useReactFlow();
+
+    // ── History store (Phase 18 — undo/redo) ─────────────────────────────
+    const { setTopologySnapshot, nodes: historyNodes, projectId: historyProjectId } =
+        useTopologyHistoryStore();
+    // Ref that tracks the last snapshot we pushed so we can detect undo/redo
+    const lastPushedRef = useRef<string>('');
 
     // ── Estado para modal de Ghost Node (drop-on-pane) ───────────────────
     const [showGhostModal, setShowGhostModal] = useState(false);
@@ -77,6 +93,22 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
     // ── Estado local dos nós (permite drag e nudge sem refetch) ─────────
     const [localNodes, setLocalNodes] = useState<Node<PoleNodeData>[]>([]);
 
+    // Push current nodes into the history store (records a temporal snapshot)
+    const pushToHistory = useCallback(
+        (nodes: Node<PoleNodeData>[], edges: ApiEdge[]) => {
+            const persisted = nodes.map(toPersistedNode);
+            const serialized = JSON.stringify(persisted);
+            if (serialized === lastPushedRef.current) return; // same state, skip
+            lastPushedRef.current = serialized;
+            setTopologySnapshot(
+                projectId,
+                persisted,
+                edges.map(toPersistedEdge)
+            );
+        },
+        [projectId, setTopologySnapshot]
+    );
+
     // Converte resposta da API para o formato do React Flow
     const apiMappedNodes = useMemo<Node<PoleNodeData>[]>(() => {
         const apiNodes: ApiNode[] = topology?.nodes ?? [];
@@ -92,22 +124,42 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
     useEffect(() => {
         if (apiMappedNodes.length > 0) {
             setLocalNodes(apiMappedNodes);
+            pushToHistory(apiMappedNodes, topology?.edges ?? []);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [topology]);
 
-    // ── Callback: atualiza posição local e persiste no backend ──────────
+    // Sincroniza localNodes quando undo/redo muda o historyNodes (Phase 18)
+    useEffect(() => {
+        if (historyProjectId !== projectId || historyNodes.length === 0) return;
+        const serialized = JSON.stringify(historyNodes);
+        if (serialized === lastPushedRef.current) return; // our own push, ignore
+        // External change (undo/redo): restore localNodes from history
+        lastPushedRef.current = serialized;
+        setLocalNodes(
+            historyNodes.map(pn => ({
+                id: pn.id,
+                type: 'pole' as const,
+                position: pn.position,
+                data: pn.data as PoleNodeData,
+            }))
+        );
+    }, [historyNodes, historyProjectId, projectId]);
+
+    // ── Callback: atualiza posição local, persiste no backend e grava histórico
     const onNodeDragStop = useCallback(
         (_event: React.MouseEvent, node: Node<PoleNodeData>) => {
-            setLocalNodes(prev =>
-                prev.map(n => n.id === node.id ? { ...n, position: node.position } : n)
-            );
+            setLocalNodes(prev => {
+                const next = prev.map(n => n.id === node.id ? { ...n, position: node.position } : n);
+                pushToHistory(next, topology?.edges ?? []);
+                return next;
+            });
             const nodeId = parseInt(node.id, 10);
             if (!isNaN(nodeId)) {
                 patchPosition.mutate({ nodeId, pos_x: node.position.x, pos_y: node.position.y });
             }
         },
-        [patchPosition]
+        [patchPosition, pushToHistory, topology?.edges]
     );
 
     // ── Helper: mover nó selecionado por delta ───────────────────────────
@@ -117,17 +169,21 @@ function TopologyCanvas({ projectId }: { projectId: number }) {
             const selectedIdStr = String(selectedNodeId);
             let newPos = { x: 0, y: 0 };
 
-            setLocalNodes(prev => prev.map(n => {
-                if (n.id === selectedIdStr) {
-                    newPos = { x: n.position.x + dx, y: n.position.y + dy };
-                    return { ...n, position: newPos };
-                }
-                return n;
-            }));
+            setLocalNodes(prev => {
+                const next = prev.map(n => {
+                    if (n.id === selectedIdStr) {
+                        newPos = { x: n.position.x + dx, y: n.position.y + dy };
+                        return { ...n, position: newPos };
+                    }
+                    return n;
+                });
+                pushToHistory(next, topology?.edges ?? []);
+                return next;
+            });
 
             patchPosition.mutate({ nodeId: selectedNodeId, pos_x: newPos.x, pos_y: newPos.y });
         },
-        [selectedNodeId, patchPosition]
+        [selectedNodeId, patchPosition, pushToHistory, topology?.edges]
     );
 
     // ── Herança de Condutores: ao conectar A→B herda cabos do vão de saída de A ─
