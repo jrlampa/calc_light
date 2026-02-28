@@ -41,3 +41,8 @@ class NodeSpanCreate(NodeSpanConfigBase):
 
 class NodeSpanResponse(NodeSpanConfigBase):
     id: int
+
+class NodePositionUpdate(BaseModel):
+    """Payload enviado pelo React Flow ao soltar um nó (drag-and-drop)."""
+    pos_x: float
+    pos_y: float

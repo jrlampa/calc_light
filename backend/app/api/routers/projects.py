@@ -6,7 +6,8 @@ from app.domain.models import Project as DomainProject, ProjectNode as DomainPro
 from app.schemas.projects import (
     ProjectCreate, ProjectResponse, 
     ProjectNodeCreate, ProjectNodeResponse,
-    NodeSpanCreate, NodeSpanResponse
+    NodeSpanCreate, NodeSpanResponse,
+    NodePositionUpdate
 )
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
@@ -39,3 +40,16 @@ def add_project_node(project_id: int, node_in: ProjectNodeCreate, repo: ProjectR
 def add_node_span(project_id: int, span_in: NodeSpanCreate, repo: ProjectRepository = Depends(get_repository)):
     domain_span = DomainNodeSpanConfig(**span_in.dict())
     return repo.add_span_config(domain_span)
+
+@router.patch("/{project_id}/nodes/{node_id}/position", response_model=ProjectNodeResponse)
+def update_node_position(
+    project_id: int,
+    node_id: int,
+    position_in: NodePositionUpdate,
+    repo: ProjectRepository = Depends(get_repository)
+):
+    """Persiste a posição XY após drag-and-drop no React Flow."""
+    updated = repo.update_node_position(node_id, position_in.pos_x, position_in.pos_y)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Nó não encontrado")
+    return updated

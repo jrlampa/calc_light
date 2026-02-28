@@ -58,6 +58,20 @@ class ProjectRepository:
             cursor.execute("UPDATE project_nodes SET effort_dan = ? WHERE id = ?", (effort_dan, node_id))
             conn.commit()
 
+    def update_node_position(self, node_id: int, pos_x: float, pos_y: float) -> Optional[ProjectNode]:
+        """Persiste a posição XY após drag-and-drop no React Flow."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE project_nodes SET pos_x = ?, pos_y = ? WHERE id = ?",
+                (pos_x, pos_y, node_id)
+            )
+            conn.commit()
+            cursor.execute("SELECT * FROM project_nodes WHERE id = ?", (node_id,))
+            row = cursor.fetchone()
+            return ProjectNode(**dict(row)) if row else None
+
+
     # --- Node Span Configs (Edges) ---
     def add_span_config(self, span: NodeSpanConfig) -> NodeSpanConfig:
         with self._get_connection() as conn:
