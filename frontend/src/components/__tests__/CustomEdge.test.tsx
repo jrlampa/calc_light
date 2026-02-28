@@ -13,6 +13,8 @@ vi.mock('@xyflow/react', () => ({
 
 const defaultProps = {
     id: 'edge-1',
+    source: 'node-1',
+    target: 'node-2',
     sourceX: 0,
     sourceY: 0,
     targetX: 200,
