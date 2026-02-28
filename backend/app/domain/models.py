@@ -1,8 +1,9 @@
+
 from pydantic import BaseModel
-from typing import Optional
+
 
 class Conductor(BaseModel):
-    id: Optional[int] = None
+    id: int | None = None
     name: str
     diameter_m: float
     weight_kg_m: float
@@ -12,7 +13,7 @@ class Conductor(BaseModel):
     messenger_diameter: float = 0.0
 
 class Pole(BaseModel):
-    id: Optional[int] = None
+    id: int | None = None
     type_name: str
     height_m: float
     resistance_dan: float
@@ -24,7 +25,7 @@ class CalculationInput(BaseModel):
     angle_deg: float
     pole_height_m: float
     anchorage_height_m: float
-    conductor_id: Optional[int] = None
+    conductor_id: int | None = None
     level: str  # e.g., 'MT1', 'MT2', 'BT'
     level_order: int # e.g. 1 for MT1, 2 for MT2
     wind_pressure: float = 16.956  # default from excel (0.00471*60^2)
@@ -47,9 +48,9 @@ class ProjectBase(BaseModel):
     name: str
 
 class Project(ProjectBase):
-    id: Optional[int] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    id: int | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
 class ProjectNodeBase(BaseModel):
     project_id: int
@@ -60,20 +61,20 @@ class ProjectNodeBase(BaseModel):
     effort_dan: float = 0.0
 
 class ProjectNode(ProjectNodeBase):
-    id: Optional[int] = None
+    id: int | None = None
 
 class NodeSpanConfigBase(BaseModel):
     source_node_id: int
     target_node_id: int
-    mt_conductor_id: Optional[int] = None
+    mt_conductor_id: int | None = None
     mt_sag_m: float = 0.0
-    bt_conductor_id: Optional[int] = None
+    bt_conductor_id: int | None = None
     bt_sag_m: float = 0.0
     span_length_m: float = 0.0
     angle_deg: float = 0.0
 
 class NodeSpanConfig(NodeSpanConfigBase):
-    id: Optional[int] = None
+    id: int | None = None
 
 # Retorno de Topologia Híbrida (Grafo)
 class TopologyEdge(BaseModel):

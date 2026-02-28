@@ -1,5 +1,6 @@
+
 from pydantic import BaseModel
-from typing import List, Dict
+
 
 class TopologyEdge(BaseModel):
     id: str  # e.g. "e-1-2"
@@ -10,12 +11,12 @@ class TopologyEdge(BaseModel):
 
 class TopologyNode(BaseModel):
     id: str
-    position: Dict[str, float] # { "x": float, "y": float }
-    data: Dict[str, str | float]     # { "label": str, "effort": float }
+    position: dict[str, float] # { "x": float, "y": float }
+    data: dict[str, str | float]     # { "label": str, "effort": float }
 
 class TopologyResponse(BaseModel):
-    nodes: List[TopologyNode]
-    edges: List[TopologyEdge]
+    nodes: list[TopologyNode]
+    edges: list[TopologyEdge]
 
 class ForceVectorResponse(BaseModel):
     component_x: float

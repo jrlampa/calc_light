@@ -1,5 +1,5 @@
+
 from pydantic import BaseModel, field_validator
-from typing import Optional
 
 
 class ProjectBase(BaseModel):
@@ -22,8 +22,8 @@ class ProjectCreate(ProjectBase):
 
 class ProjectResponse(ProjectBase):
     id: int
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
 
 class ProjectNodeBase(BaseModel):
@@ -56,9 +56,9 @@ class ProjectNodeResponse(ProjectNodeBase):
 class NodeSpanConfigBase(BaseModel):
     source_node_id: int
     target_node_id: int
-    mt_conductor_id: Optional[int] = None
+    mt_conductor_id: int | None = None
     mt_sag_m: float = 0.0
-    bt_conductor_id: Optional[int] = None
+    bt_conductor_id: int | None = None
     bt_sag_m: float = 0.0
     span_length_m: float = 0.0
     angle_deg: float = 0.0

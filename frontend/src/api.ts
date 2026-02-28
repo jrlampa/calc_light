@@ -10,11 +10,8 @@ export const api = axios.create({
     },
 });
 
-// Interceptor de respostas para debug (opcional, ajuda na integração)
+// Interceptor de respostas — propaga erros para os query handlers (React Query)
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
-        console.error('API Error:', error.response?.data || error.message);
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );

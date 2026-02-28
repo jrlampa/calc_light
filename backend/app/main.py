@@ -1,9 +1,10 @@
 import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Routers modulares (Arquitetura DDD - Fase 3+)
-from app.api.routers import catalogs, projects, calculations, topology, forces
+from app.api.routers import calculations, catalogs, forces, projects, topology
 
 app = FastAPI(
     title="CACL LIGHT API",

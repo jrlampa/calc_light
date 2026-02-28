@@ -1,13 +1,19 @@
+
 from fastapi import APIRouter, Depends, HTTPException
-from typing import List
+
 from app.api.dependencies import get_repository
+from app.domain.models import NodeSpanConfig as DomainNodeSpanConfig
+from app.domain.models import Project as DomainProject
+from app.domain.models import ProjectNode as DomainProjectNode
 from app.infrastructure.database.repository import ProjectRepository
-from app.domain.models import Project as DomainProject, ProjectNode as DomainProjectNode, NodeSpanConfig as DomainNodeSpanConfig
 from app.schemas.projects import (
-    ProjectCreate, ProjectResponse, 
-    ProjectNodeCreate, ProjectNodeResponse,
-    NodeSpanCreate, NodeSpanResponse,
-    NodePositionUpdate
+    NodePositionUpdate,
+    NodeSpanCreate,
+    NodeSpanResponse,
+    ProjectCreate,
+    ProjectNodeCreate,
+    ProjectNodeResponse,
+    ProjectResponse,
 )
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
@@ -18,7 +24,7 @@ def create_project(project_in: ProjectCreate, repo: ProjectRepository = Depends(
     created = repo.create_project(domain_project)
     return created
 
-@router.get("/", response_model=List[ProjectResponse])
+@router.get("/", response_model=list[ProjectResponse])
 def list_projects(repo: ProjectRepository = Depends(get_repository)):
     return repo.get_projects()
 

@@ -1,15 +1,18 @@
-import pytest
 import os
-import tempfile
 import sqlite3
+import tempfile
+
+import pytest
+
+from app.domain.models import NodeSpanConfig, Project, ProjectNode
 from app.infrastructure.database.repository import ProjectRepository
-from app.domain.models import Project, ProjectNode, NodeSpanConfig
+
 
 @pytest.fixture
 def db_path():
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
-    
+
     # Initialize schema
     conn = sqlite3.connect(path)
     cursor = conn.cursor()
@@ -50,7 +53,7 @@ def db_path():
     """)
     conn.commit()
     conn.close()
-    
+
     yield path
     try:
         os.remove(path)
@@ -59,33 +62,33 @@ def db_path():
 
 def test_database_crud_relational(db_path):
     repo = ProjectRepository(db_path)
-    
+
     # 1. Create Project
     p = Project(name="Test Half-way BIM Project")
     created_p = repo.create_project(p)
     assert created_p.id is not None
-    
+
     # 2. Read Projects
     projects = repo.get_projects()
     assert len(projects) == 1
     fetched_p = repo.get_project(created_p.id)
     assert fetched_p.name == "Test Half-way BIM Project"
-    
+
     # 3. Add Project Nodes (Poles with Catalog FK)
     n1 = ProjectNode(project_id=created_p.id, pole_id=1, label="P1", pos_x=0.0, pos_y=0.0)
     n2 = ProjectNode(project_id=created_p.id, pole_id=2, label="P2", pos_x=50.0, pos_y=0.0)
-    
+
     repo.add_node(n1)
     repo.add_node(n2)
-    
+
     nodes = repo.get_project_nodes(created_p.id)
     assert len(nodes) == 2
-    
+
     # Update effort
     repo.update_node_effort(nodes[0].id, 150.5)
     nodes_updated = repo.get_project_nodes(created_p.id)
     assert nodes_updated[0].effort_dan == 150.5
-    
+
     # 4. Add Node Span Config (Edges with Conductor Catalog FKs)
     span = NodeSpanConfig(
         source_node_id=nodes[0].id,
@@ -99,7 +102,7 @@ def test_database_crud_relational(db_path):
     )
     created_span = repo.add_span_config(span)
     assert created_span.id is not None
-    
+
     spans = repo.get_span_configs_for_project(created_p.id)
     assert len(spans) == 1
     assert spans[0].span_length_m == 50.0

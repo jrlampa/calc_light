@@ -1,5 +1,5 @@
-import sqlite3
 import os
+import sqlite3
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 default_db_path = os.path.join(BASE_DIR, "database", "cacl_light.db")
