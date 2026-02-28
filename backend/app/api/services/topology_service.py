@@ -23,8 +23,27 @@ class TopologyService:
         p_rows = self.db.execute("SELECT * FROM poles").fetchall()
         poles_dict = {row["id"]: Pole(**dict(row)) for row in p_rows}
 
+        # Fase 19 — Ler flag de arrasto e áreas de equipamentos por nó
+        project = self.repo.get_project(project_id)
+        enable_equipment_drag = project.enable_equipment_drag if project else False
+
+        node_equipment_areas: dict[int, float] = {}
+        if enable_equipment_drag:
+            for node in nodes:
+                if node.id and not node.is_ghost:
+                    area = self.repo.get_node_equipment_total_area(node.id)
+                    if area > 0:
+                        node_equipment_areas[node.id] = area
+
         # Domain Engine: gera o layout visual com cálculo de utilização
-        topology = build_topology_diagram(nodes, spans, conductors_dict, poles_dict)
+        topology = build_topology_diagram(
+            nodes,
+            spans,
+            conductors_dict,
+            poles_dict,
+            enable_equipment_drag=enable_equipment_drag,
+            node_equipment_areas=node_equipment_areas,
+        )
 
         # Atualiza banco com esforços calculados
         for db_node in nodes:

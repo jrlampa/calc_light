@@ -1,6 +1,6 @@
 import sqlite3
 
-from app.domain.models import NodeSpanConfig, Pole, Project, ProjectNode
+from app.domain.models import CatalogEquipment, NodeSpanConfig, Pole, Project, ProjectNode
 
 
 class ProjectRepository:
@@ -209,3 +209,68 @@ class ProjectRepository:
             )
             row = cursor.fetchone()
             return NodeSpanConfig(**dict(row)) if row else None
+
+    # --- Configurações do Projeto (Fase 19) ---
+
+    def update_project_settings(self, project_id: int, enable_equipment_drag: bool) -> Project | None:
+        """Atualiza as configurações globais do projeto (modo avançado de arrasto)."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE projects SET enable_equipment_drag = ? WHERE id = ?",
+                (1 if enable_equipment_drag else 0, project_id),
+            )
+            conn.commit()
+            cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            d = dict(row)
+            d["enable_equipment_drag"] = bool(d.get("enable_equipment_drag", 0))
+            return Project(**d)
+
+    # --- Catálogo de Equipamentos (Fase 19) ---
+
+    def get_equipment_catalog(self) -> list[CatalogEquipment]:
+        """Retorna todos os equipamentos do catálogo estático."""
+        with self._get_connection() as conn:
+            rows = conn.execute("SELECT * FROM catalog_equipment ORDER BY name").fetchall()
+            return [CatalogEquipment(**dict(row)) for row in rows]
+
+    # --- Equipamentos por Nó (Fase 19) ---
+
+    def get_node_equipment_ids(self, node_id: int) -> list[int]:
+        """Retorna os IDs dos equipamentos acoplados a um nó."""
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                "SELECT equipment_id FROM node_equipment WHERE node_id = ?",
+                (node_id,),
+            ).fetchall()
+            return [row["equipment_id"] for row in rows]
+
+    def set_node_equipment_ids(self, node_id: int, equipment_ids: list[int]) -> list[int]:
+        """Substitui (replace) os equipamentos acoplados a um nó atomicamente."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM node_equipment WHERE node_id = ?", (node_id,))
+            for eid in equipment_ids:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO node_equipment (node_id, equipment_id) VALUES (?, ?)",
+                    (node_id, eid),
+                )
+            conn.commit()
+            return self.get_node_equipment_ids(node_id)
+
+    def get_node_equipment_total_area(self, node_id: int) -> float:
+        """Retorna a soma das áreas de arrasto de todos os equipamentos acoplados ao nó."""
+        with self._get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT COALESCE(SUM(e.area_arrasto_m2), 0.0) AS total
+                FROM node_equipment ne
+                JOIN catalog_equipment e ON ne.equipment_id = e.id
+                WHERE ne.node_id = ?
+                """,
+                (node_id,),
+            ).fetchone()
+            return float(row["total"]) if row else 0.0

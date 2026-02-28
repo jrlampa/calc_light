@@ -23,6 +23,10 @@ export interface NodeSpanConfig {
     angle_deg: number;
 }
 
+export interface ProjectSettings {
+    enable_equipment_drag: boolean;
+}
+
 export const useProjectNodes = (projectId: number | null) => {
     return useQuery({
         queryKey: ['projects', projectId, 'nodes'],
@@ -51,6 +55,51 @@ export const useSaveSpan = () => {
         mutationFn: ({ projectId, data }: { projectId: number, data: Omit<NodeSpanConfig, 'id'> }) =>
             api.post(`/projects/${projectId}/edges`, data).then(res => res.data),
         onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['topology', variables.projectId] });
+        },
+    });
+};
+
+// ── Project Settings (Phase 19) ───────────────────────────────────────────────
+
+export const useProjectSettings = (projectId: number | null) => {
+    return useQuery({
+        queryKey: ['projects', projectId],
+        queryFn: () => api.get<ProjectSettings & { id: number; name: string }>(`/projects/${projectId}`).then(res => res.data),
+        enabled: !!projectId,
+        select: (data) => ({ enable_equipment_drag: data.enable_equipment_drag }),
+    });
+};
+
+export const useUpdateProjectSettings = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ projectId, settings }: { projectId: number; settings: ProjectSettings }) =>
+            api.patch(`/projects/${projectId}/settings`, settings).then(res => res.data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['projects', variables.projectId] });
+            queryClient.invalidateQueries({ queryKey: ['topology', variables.projectId] });
+        },
+    });
+};
+
+// ── Node Equipment (Phase 19) ─────────────────────────────────────────────────
+
+export const useNodeEquipment = (projectId: number | null, nodeId: number | null) => {
+    return useQuery({
+        queryKey: ['projects', projectId, 'nodes', nodeId, 'equipment'],
+        queryFn: () => api.get<number[]>(`/projects/${projectId}/nodes/${nodeId}/equipment`).then(res => res.data),
+        enabled: !!projectId && !!nodeId,
+    });
+};
+
+export const useSetNodeEquipment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ projectId, nodeId, equipmentIds }: { projectId: number; nodeId: number; equipmentIds: number[] }) =>
+            api.put(`/projects/${projectId}/nodes/${nodeId}/equipment`, { equipment_ids: equipmentIds }).then(res => res.data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['projects', variables.projectId, 'nodes', variables.nodeId, 'equipment'] });
             queryClient.invalidateQueries({ queryKey: ['topology', variables.projectId] });
         },
     });

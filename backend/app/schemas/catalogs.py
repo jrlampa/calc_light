@@ -18,3 +18,10 @@ class PoleResponse(BaseModel):
     height_m: float
     resistance_dan: float
     weight_parameter_x: float = 0.0
+
+
+class CatalogEquipmentResponse(BaseModel):
+    """Equipamento do catálogo estático para arrasto adicional (Fase 19)."""
+    id: int
+    name: str
+    area_arrasto_m2: float

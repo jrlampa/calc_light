@@ -8,6 +8,7 @@ from app.domain.models import Project as DomainProject
 from app.domain.models import ProjectNode as DomainProjectNode
 from app.infrastructure.database.repository import ProjectRepository
 from app.schemas.projects import (
+    NodeEquipmentUpdate,
     NodeGhostUpdate,
     NodePositionUpdate,
     NodeSpanCreate,
@@ -16,6 +17,7 @@ from app.schemas.projects import (
     ProjectNodeCreate,
     ProjectNodeResponse,
     ProjectResponse,
+    ProjectSettingsUpdate,
 )
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
@@ -80,6 +82,44 @@ def set_node_ghost(
     if not updated:
         raise HTTPException(status_code=404, detail="Nó não encontrado")
     return updated
+
+
+# ── Configurações do Projeto (Fase 19) ───────────────────────────────────────
+
+@router.patch("/{project_id}/settings", response_model=ProjectResponse)
+def update_project_settings(
+    project_id: int,
+    payload: ProjectSettingsUpdate,
+    repo: ProjectRepository = Depends(get_repository),
+):
+    """Atualiza as configurações globais do projeto (ex: enable_equipment_drag)."""
+    updated = repo.update_project_settings(project_id, payload.enable_equipment_drag)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Projeto não encontrado")
+    return updated
+
+
+# ── Equipamentos por Nó (Fase 19) ────────────────────────────────────────────
+
+@router.get("/{project_id}/nodes/{node_id}/equipment", response_model=list[int])
+def get_node_equipment(
+    project_id: int,
+    node_id: int,
+    repo: ProjectRepository = Depends(get_repository),
+):
+    """Retorna os IDs dos equipamentos acoplados a um nó."""
+    return repo.get_node_equipment_ids(node_id)
+
+
+@router.put("/{project_id}/nodes/{node_id}/equipment", response_model=list[int])
+def set_node_equipment(
+    project_id: int,
+    node_id: int,
+    payload: NodeEquipmentUpdate,
+    repo: ProjectRepository = Depends(get_repository),
+):
+    """Substitui os equipamentos acoplados a um nó (operação idempotente)."""
+    return repo.set_node_equipment_ids(node_id, payload.equipment_ids)
 
 
 @router.get("/{project_id}/export/excel", tags=["Export"])
