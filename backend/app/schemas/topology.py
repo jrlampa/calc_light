@@ -12,7 +12,7 @@ class TopologyEdge(BaseModel):
 class TopologyNode(BaseModel):
     id: str
     position: dict[str, float] # { "x": float, "y": float }
-    data: dict[str, str | float]     # { "label": str, "effort": float }
+    data: dict[str, str | float | bool]  # { "label": str, "effort": float, "utilization_percent": float, ... }
 
 class TopologyResponse(BaseModel):
     nodes: list[TopologyNode]
@@ -24,3 +24,4 @@ class ForceVectorResponse(BaseModel):
     magnitude_dan: float
     angle_deg: float
     level: str
+    nominal_capacity: float | None = None  # Only present on RESULT vector

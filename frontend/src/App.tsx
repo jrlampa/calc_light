@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
+import { AlertTriangle, X } from 'lucide-react';
 import { useUIStore } from './store';
 import { FileText, Activity, Network, Plus, FolderOpen } from 'lucide-react';
 import TractionCalculator from './components/TractionCalculator';
@@ -67,7 +68,7 @@ function NewProjectModal({ onConfirm, onClose }: { onConfirm: (name: string) => 
 
 // ── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────
 function App() {
-  const { activeTab, setActiveTab, selectedProjectId, setSelectedProjectId } = useUIStore();
+  const { activeTab, setActiveTab, selectedProjectId, setSelectedProjectId, overloadedNodeIds, setOverloadedNodeIds, highlightOverloaded, setHighlightOverloaded } = useUIStore();
   const queryClient = useQueryClient();
 
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -78,6 +79,27 @@ function App() {
     queryKey: ['projects'],
     queryFn: () => api.get('/projects').then(res => res.data)
   });
+
+  // Fetch topology to detect overloaded nodes (passive, background query)
+  const { data: topology } = useQuery({
+    queryKey: ['topology', selectedProjectId],
+    queryFn: () => api.get(`/topology/project/${selectedProjectId}`).then(r => r.data),
+    enabled: !!selectedProjectId,
+    staleTime: 30_000,
+  });
+
+  // Sync overloaded node IDs into global store whenever topology changes
+  useEffect(() => {
+    if (!topology?.nodes) {
+      setOverloadedNodeIds([]);
+      return;
+    }
+    const overloaded: number[] = topology.nodes
+      .filter((n: { id: string; data: { is_overloaded?: boolean } }) => n.data?.is_overloaded)
+      .map((n: { id: string }) => parseInt(n.id, 10))
+      .filter((id: number) => !isNaN(id));
+    setOverloadedNodeIds(overloaded);
+  }, [topology, setOverloadedNodeIds]);
 
   // Create Project Mutation
   const createProjectMutation = useMutation({
@@ -177,6 +199,36 @@ function App() {
       <Layout sidebarContent={SidebarContent}>
         {selectedProjectId ? (
           <div className="flex flex-col h-full w-full">
+            {/* ── BANNER DE ALERTA DE SOBRECARGA ──────────────────────────── */}
+            {overloadedNodeIds.length > 0 && (
+              <div
+                className="flex items-center justify-between gap-3 px-5 py-2.5 bg-red-50/90 border-b border-red-200/60 text-red-700 backdrop-blur-sm cursor-pointer group"
+                onClick={() => {
+                  setActiveTab('topology');
+                  setHighlightOverloaded(!highlightOverloaded);
+                }}
+                role="alert"
+                aria-live="polite"
+              >
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <AlertTriangle size={16} className="shrink-0 animate-pulse" />
+                  <span>
+                    {overloadedNodeIds.length} poste{overloadedNodeIds.length > 1 ? 's excedem' : ' excede'} a capacidade nominal.
+                    <span className="ml-1.5 text-xs font-normal opacity-70">
+                      {highlightOverloaded ? 'Clique para mostrar todos' : 'Clique para destacar na topologia →'}
+                    </span>
+                  </span>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setHighlightOverloaded(false); }}
+                  className="p-0.5 rounded hover:bg-red-100/60 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                  aria-label="Fechar alerta"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
             {/* TABS HEADER */}
             <div className="flex items-center gap-2 border-b border-white/50 px-6 pt-4 pb-0 bg-white/20">
               <button

@@ -87,7 +87,7 @@ class TopologyEdge(BaseModel):
 class TopologyNode(BaseModel):
     id: str
     position: dict # { "x": float, "y": float }
-    data: dict     # { "label": str, "effort": float }
+    data: dict     # { "label": str, "effort": float, "utilization_percent": float, ... }
 
 class ProjectTopology(BaseModel):
     nodes: list[TopologyNode]

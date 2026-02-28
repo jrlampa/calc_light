@@ -1,6 +1,6 @@
 import sqlite3
 
-from app.domain.models import Conductor
+from app.domain.models import Conductor, Pole
 from app.domain.topology_service import build_topology_diagram
 from app.infrastructure.database.repository import ProjectRepository
 from app.schemas.topology import TopologyResponse
@@ -19,14 +19,14 @@ class TopologyService:
         c_rows = self.db.execute("SELECT * FROM conductors").fetchall()
         conductors_dict = {row["id"]: Conductor(**dict(row)) for row in c_rows}
 
-        # Obter dicionário de postes do DB (apenas alturas por enquanto)
+        # Obter dicionário completo de postes (incluindo resistance_dan para margem de segurança)
         p_rows = self.db.execute("SELECT * FROM poles").fetchall()
-        poles_dict = {row["id"]: float(row["height_m"]) for row in p_rows}
+        poles_dict = {row["id"]: Pole(**dict(row)) for row in p_rows}
 
-        # Domain Engine: gera o layout visual
+        # Domain Engine: gera o layout visual com cálculo de utilização
         topology = build_topology_diagram(nodes, spans, conductors_dict, poles_dict)
 
-        # Atualiza banco com esforços calculados (simulando persistência assíncrona/imediata)
+        # Atualiza banco com esforços calculados
         for db_node in nodes:
             self.repo.update_node_effort(db_node.id, db_node.effort_dan)
 

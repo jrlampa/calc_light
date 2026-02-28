@@ -9,7 +9,7 @@ vi.mock('@xyflow/react', () => ({
 }));
 
 function renderNode(data: PoleNodeData) {
-    return render(<CustomNode data={data} />);
+    return render(<CustomNode id="1" data={data} />);
 }
 
 describe('CustomNode', () => {
@@ -35,10 +35,15 @@ describe('CustomNode', () => {
         expect(badge).toBeTruthy();
     });
 
-    it('renders red badge for critical effort (> 500 daN)', () => {
-        const { container } = renderNode({ label: 'P1', effort_dan: 600 });
+    it('renders red badge when is_overloaded is true', () => {
+        const { container } = renderNode({ label: 'P1', effort_dan: 600, is_overloaded: true, utilization_percent: 120, nominal_capacity: 500 });
         const badge = container.querySelector('.bg-red-500\\/90');
         expect(badge).toBeTruthy();
+    });
+
+    it('shows utilization percentage when available', () => {
+        renderNode({ label: 'P1', effort_dan: 200, utilization_percent: 85.5, is_overloaded: false, nominal_capacity: 300 });
+        expect(screen.getByText('85.5%')).toBeTruthy();
     });
 
     it('defaults effort to 0 when not provided', () => {
