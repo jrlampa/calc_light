@@ -1,0 +1,33 @@
+{
+    "algorithm": "Bidirectional Load Flow (Backward/Forward Rateio)",
+    "inputs": {
+        "G3_DistribCargas": "Transformer Reading (kVA)",
+        "G7_DistribCargas": "Temperature Factor (Standard = 1.0)",
+        "CH5_QDTDutra": "Growth Toggle (SIM/NAO)"
+    },
+    "rateio_math": {
+        "Fator_Leitura": 0.375,
+        "Demanda_Corrigida_G9": "G3 * 0.375 * G7",
+        "Weight_n": "Σ(qtd_ramais_n * Ampacidade_n)",
+        "W_total": "SUM(Ramais!W25:W50) + SUM(Ramais!W56:W81)",
+        "Carga_Pole_n": "G9 * (Weight_n / W_total)"
+    },
+    "topology_bidirectional": {
+        "Side_A": "QDT Dutra 2.3 Lado Esquerdo (Processes Ramais Lado 1)",
+        "Side_B": "QDT Dutra 2.3 Lado Direito (Processes Ramais Lado 2)",
+        "Root_Node": {
+            "Pole": "TRAF.1",
+            "Rule": "Transformer ramais are included in W_total but typically assigned to only one side's QDT or handled as the 'base' load of the Trafo row (Row 13)."
+        }
+    },
+    "voltage_drop_accumulation": {
+        "Formula_Linear": "ΔV_accum[n] = ΔV_trecho[n] + ΔV_accum[n-1]",
+        "Phase_Factors": {
+            "3_Phases": 1,
+            "2_Phases": 2,
+            "1_Phase": 6
+        },
+        "Stretch_DV": "Carga_Accum * K_coef * Length * Phase_Factor"
+    },
+    "branching": "Strictly linear within each sheet. Side branches require manual formula redirection or separate side calculation (linearization requirement)."
+}

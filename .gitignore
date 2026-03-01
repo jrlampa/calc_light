@@ -41,3 +41,27 @@ local_data/templates/*.xlsx
 
 # Backups locais (não versionar o conteúdo, apenas a pasta)
 backups/*.db
+
+# Fase 21.9.2 - Sanitização e DDD
+backend/test_log.txt
+backend/cov_log.txt
+backend/debug_output.txt
+backend/app/domain/data/*.json
+!backend/app/domain/data/cables_catalog_light.json
+!backend/app/domain/data/voltage_drop_coef_light.json
+!backend/app/domain/data/demand_curve_light.json
+!backend/app/domain/data/transformers_catalog_light.json
+!backend/app/domain/data/load_distribution_logic.json
+!backend/app/domain/data/cqt_topology_logic.json
+# Fase 21.9.9 — Blindagem: Scripts temporários, dumps e miners
+tmp_*.py
+dump_*.py
+miner_*.py
+*_dump.txt
+*_formulas.txt
+paranoid_debug.log
+*.log
+
+# Python bytecode (reforço)
+**/__pycache__/
+*.pyc

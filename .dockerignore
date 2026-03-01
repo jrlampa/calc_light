@@ -44,3 +44,21 @@ MEMORY.md
 # Test files (not needed in runtime image)
 backend/app/tests/
 backend/app/scripts/
+backend/*.txt
+backend/*.log
+*.txt
+*.log
+
+# Fase 21.9.9 - Blindagem: Scripts temporários, miners e dumps (espelha .gitignore)
+tmp_*.py
+dump_*.py
+miner_*.py
+*_dump.txt
+*_formulas.txt
+*.log
+
+# Root-level scripts and miners (não vão para a imagem)
+light_cqt_core.py
+test_21_8_shadow.py
+test_21_9_1_paranoid.py
+dc_sums.txt

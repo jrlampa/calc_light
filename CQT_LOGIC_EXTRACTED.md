@@ -1,6 +1,6 @@
 # CQT_LOGIC_EXTRACTED.md — Dossiê de Engenharia Reversa
 
-# Projeto: CACL LIGHT | Fase: 21.1, 21.2, 21.3
+# Projeto: CACL LIGHT | Fase: 21.9.9 (Versão Platina)
 
 # Origem: PLANILHA_DESTRAVADA.xlsm (Light / Enel)
 
@@ -128,6 +128,11 @@ Extraídos em `cables_catalog_light.json` com: bitola, R (Ω/km), X (Ω/km), Amp
 
 Extraídos em `cables_catalog_light.json` com: seção (mm²), material, R (Ω/km), X (Ω/km), tipo.
 
+### 3.4 Atenção: Temperatura de Referência
+>
+> [!WARNING]
+> **Resistência a Frio (20°C)**: As impedâncias (R e X) utilizadas pela Light para os cálculos de QDT nos gabaritos normativos referem-se à temperatura de 20°C (Cold Resistance). O uso de valores a 70°C (temperatura de operação) gera desvios de até 20% nos resultados em relação à planilha original.
+
 ---
 
 ## 4. Parâmetros de Transformador (Fase 21.2)
@@ -190,10 +195,12 @@ Extraídos em `transformers_catalog_light.json`. A Light usa cenários de aloca�
 | **G9** | Demanda Corrigida | `=IF(G7="","",G7 × G5)` |
 
 **Fórmula analítica da Demanda Corrigida:**
+
 ```
 Dem_Corrigida = Fator_Temp × (Leitura_Trafo × 0.375)
              = 1.0 × (G3 × 0.375)     [com Fator_Temp padrão = 1]
 ```
+
 O fator `0.375` converte a corrente de trafo em demanda kVA considerando FP e tensão de operação.
 
 ### 7.2 Peso Proporcional de Cada Poste (Ramais!W_n)
@@ -212,6 +219,7 @@ Ampacidades (Linha 6):
 ```
 
 **Fórmula da planilha (Ramais!W25 completa):**
+
 ```excel
 =C25×$C$6 + D25×$D$6 + E25×$E$6 + F25×$F$6 + G25×$G$6 + H25×$H$6
  + I25×$I$6 + J25×$J$6 + K25×$K$6 + L25×$L$6 + M25×$M$6
@@ -220,6 +228,7 @@ Ampacidades (Linha 6):
 ```
 
 **Totais:**
+
 ```
 W_Total_L1 = SUM(W25:W49)   ← Ramais!W50
 W_Total_L2 = SUM(W56:W80)   ← Ramais!W81
@@ -238,6 +247,7 @@ Carga_Acum_n     = SUM(Carga_n .. Carga_ultimo_poste)
 ```
 
 **Fórmula real (Distrib. Cargas!C5):**
+
 ```excel
 =IF($G$9="","", $G$9 × (Ramais!W26 / (Ramais!$W$50 + Ramais!$W$81)))
 ```
@@ -297,6 +307,7 @@ FatorDiv(N):
 ```
 ΔV%(trecho) = K_condutor × Demanda_Clandestin(N) × L_km
 ```
+
 Onde `K_condutor` vem de `voltage_drop_coef_light.json`.
 
 ---
@@ -325,3 +336,412 @@ As linhas 13-15 da aba `Ramais` definem coeficientes de QDT considerando FP real
 | `transformers_catalog_light.json` | 21.2 | 7 cenários de trafo |
 | `demand_curve_light.json` | 21.3 | 300 pontos da curva de demanda |
 | `load_distribution_logic.json` | 21.3b | Algoritmo de rateio (fórmulas + pesos) |
+
+---
+
+## 11. Topologia Bidirecional (Lado Esquerdo vs Direito) — Fase 21.4
+
+O cálculo de BT é dividido em dois eixos principais a partir do transformador (Raiz):
+
+- **Lado Esquerdo (Lado 1)**: Mapeado na aba `QDT Dutra 2.3 Lado Esquerdo`.
+- **Lado Direito (Lado 2)**: Mapeado na aba `QDT Dutra 2.3 Lado Direito`.
+
+### 11.1 Fluxo de Carga a Ré (Rateio)
+
+A carga de cada poste é uma fração da demanda total do trafo, ponderada pelo peso (`Weight_n`) dos ramais instalados:
+
+```
+Carga_Pole_n = Demanda_Corrigida_G9 * (Weight_n / (W_total_L1 + W_total_L2))
+```
+
+Onde:
+
+- `Weight_n`: `Σ(Qtd_Ramais_Fase * Ampacidade_Fase)` (Calculado na aba `Ramais`).
+- `W_total_L1`: Soma dos pesos do Lado 1 (`Ramais!W25:W50`).
+- `W_total_L2`: Soma dos pesos do Lado 2 (`Ramais!W56:W81`).
+
+## 12. Regra do Nó Raiz (Trafo) e Exclusão de Dupla Contagem
+
+> **IMPORTANTE:** Para evitar que os ramais conectados diretamente ao poste do transformador sejam contados duas vezes (uma em cada lado), a planilha utiliza uma regra de segregação manual ou via range:
+>
+> - O **Poste do Trafo** é incluído na soma de pesos de apenas um dos lados (geralmente Lado 1) ou sua carga é lançada apenas na raiz de uma das abas.
+> - Na aba `Ramais`, a divisão em blocos (Linha 25-50 e 56-81) garante que o total denominador (`W_total_L1 + W_total_L2`) seja a base única de rateio.
+
+## 13. Algoritmo de Acúmulo de Queda de Tensão (CQT)
+
+A planilha impõe uma **topologia linear** em cada aba. Derivações secundárias (ruas transversais) exigem que o projetista linearize a rede ou use sub-tabelas independentes.
+
+### 13.1 Fórmula de Acúmulo (Forward Accumulation)
+
+O Excel acumula a queda de tensão ponto a ponto:
+
+```
+ΔV_Acumulado[n] = ΔV_Acumulado[n-1] + ΔV_Trecho[n]
+```
+
+### 13.2 Fatores de Fase e Desequilíbrio
+
+A queda de tensão do trecho (`BZ`) escala drasticamente conforme o número de fases:
+
+| Configuração | Fator Multiplicador | Justificativa |
+| :--- | :---: | :--- |
+| **Trifásico (3Ø)** | **1.0** | Sistema equilibrado, corrente de neutro nula. |
+| **Bifásico (F+F ou 2Ø)** | **2.0** | Queda por fase somada. |
+| **Monofásico (F+N)** | **6.0** | Penalidade por desequilíbrio e retorno pelo neutro. |
+
+```
+ΔV_Trecho = Carga_Acumulada * K_coef * Comprimento * Fator_Fase
+```
+
+## 14. Resumo de Arquivos de Lógica Extratada
+
+| Arquivo JSON | Conteúdo |
+| :--- | :--- |
+| `cables_catalog_light.json` | Cabos, Ampacidades e Seções. |
+| `voltage_drop_coef_light.json` | Coeficientes K para Com/Resid/Misto. |
+| `demand_curve_light.json` | 300 pontos de fator de diversificação. |
+| `load_distribution_logic.json` | Fatores 37.5%, rateio por ramais e clandestinos. |
+| `cqt_topology_logic.json` | Regras de acúmulo linear e fatores de fase (1x, 2x, 6x). |
+
+---
+
+## 15. Matriz de Cálculo de Queda de Tensão (Linhas 13-32) — Fase 21.4
+
+A matriz central de cálculo opera sobre os seguintes parâmetros por trecho ($n$):
+
+- **ID (C)**: Identificador do poste ou trecho.
+- **Carga (E)**: Potência em kVA alocada ao trecho (Via rateio ou manual).
+- **Seção (AM)**: Seção do condutor (Lookup automático via catálogo JSON).
+- **Comprimento (AQ)**: Extensão do trecho em metros.
+
+### 15.1 Engine de Acúmulo (Lógica Oculta)
+
+As colunas de cálculo (`AS`, `BZ`, `CA`) implementam a seguinte aritmética:
+
+1. **Peso/Momento do Trecho (`BZ`)**:
+
+   ```
+   ΔV_trecho%[n] = Carga_Accum[n] * K_coef * Comprimento[n] * Fator_Fase
+   ```
+
+   *Onde o Fator_Fase é 1x (3Ø), 2x (2Ø) ou 6x (1Ø).*
+
+2. **Acúmulo de Queda de Tensão (`CA`)**:
+
+   ```
+   ΔV_Acumulado%[n] = ΔV_trecho%[n] + ΔV_Acumulado%[n-1]
+   ```
+
+3. **Comprimento Elétrico Acumulado (`AS`)**:
+
+   ```
+   L_Acumulado[n] = Comprimento[n] + L_Acumulado[n-1]
+   ```
+
+## 16. Cálculo do Resultado Final (Linha 33)
+
+O resultado final na célula `C33` (Tensão na Ponta) e o status `E33` (Aprovação) seguem as fórmulas:
+
+### 16.1 Tensão Final (Volt)
+
+```
+Volt_Final = Tensão_Nominal * (1 - ΔV_total% / 100)
+```
+
+*Matematicamente extraído da cascata de células `CX102 -> CW104 -> CW103`.*
+
+### 16.2 Critério de Aprovação (ANEEL / Light)
+
+A célula `E33` valida o resultado com base nos patamares de tensão regulamentar:
+
+```excel
+=IF(OR(U_Nominal=216.5, U_Nominal=220), 
+    IF(Volt_Final > 117, "Ok !!!", "Cuidado !!! Abaixo do mínimo de 117 V"), 
+    IF(Volt_Final >= 202, "Ok !!!", "Cuidado !!! Abaixo do mínimo de 202 V")
+)
+```
+
+> **NOTA DE AUTOMAÇÃO:** As colunas `AM` (Condutor) e `AN` (Amperagem Máxima) podem ser automatizadas utilizando o seeder `cables_catalog_light.json` extraído na Fase 21.2, permitindo a validação de sobrecarga do condutor em tempo de cálculo.
+
+---
+
+## 17. A Fórmula Central do CQT e Desequilíbrio de Fases — Fase 21.5
+
+A queda de tensão (CQT) absoluta é calculada no trecho e multiplicada por um fator de desequilíbrio rigoroso:
+
+### 17.1 Equações de Queda de Tensão por Tipo de Fase
+
+A fórmula base é: `ΔV_trecho = Carga_Acumulada * Coef_K * Comprimento * Fator_Fase`
+
+| Configuração | Fator (Multiplicador) | Equação Excel |
+| :--- | :---: | :--- |
+| **Trifásico (3Ø)** | **1.0** | `Carga * K * L` |
+| **Bifásico (2Ø)** | **2.0** | `Carga * K * L * 2` |
+| **Monofásico (1Ø)** | **6.0** | `Carga * K * L * 6` |
+| **Ramal Ligação (RL) 3Ø** | **2.0** | `Carga * K * L * 2` |
+
+> **Exceção Técnica:** Para trechos do tipo **Ramal de Ligação (RL) Trifásico**, a Light aplica um fator multiplicador de **2.0x** (em vez de 1.0x da rede equilibrada), correspondendo à queda no condutor de fase sob condições específicas de carga do ramal.
+
+> **Nota Técnica:** O fator **6.0** para redes monofásicas é uma simplificação conservadora da Light para considerar a queda no condutor de fase somada à queda no condutor de neutro em condições de desequilíbrio máximo (corrente de fase = corrente de neutro) e margem de segurança.
+
+### 17.2 Conversão para Porcentagem (ΔV%) — Equação Física
+
+A Light utiliza como referência a **Tensão de Linha (Phase-to-Phase)** para a base de queda percentual. A fórmula física fundamental validada é:
+
+```
+ΔV% = (S_kVA * Z_ohm_km * L_m) / (V_base^2 / 100) * Fator_Fase
+```
+
+Onde:
+
+- `V_base`: 220V (Tensão de Linha nominal).
+- `Divisor_base`: **484** (Resultado de 220²/100).
+- `L_m`: Comprimento em metros.
+- `Z_ohm_km`: Impedância a 20°C.
+
+Esta fórmula elimina a necessidade de "fatores de escala" empíricos, baseando-se puramente na física da queda de tensão referenciada a 100 kVA (modelo de rede).
+
+## 18. Lógica de Curto-Circuito (Icc) — Bônus de Engenharia
+
+Identificamos que a planilha realiza cálculos de impedância complexa em colunas ocultas (`CB` a `CJ`) para determinar a corrente de curto-circuito:
+
+- **Fórmula Icc (1Ø e 3Ø):**
+
+  ```
+  Icc = (U_nominal / √3) / |Z_total|
+  ```
+
+- **Z_total:** Soma vetorial das impedâncias do Trafo (`AS8`), Cabos (`BK`, `BL`) e Malha (`CA8`).
+- **Funções Excel:** Uso de `IMSUM` e `IMABS` para manipulação de números complexos (parte real e reatância).
+
+## 19. Resumo das Unidades e Base de Cálculo
+
+- **Unidade de Carga:** kVA (Demanda diversificada ou leitura real).
+- **Unidade de Comprimento:** Metros (m / 1000 para km).
+- **Tensão Base (`BX6`):** 220V ou 216.5V.
+- **Tensão de Referência C33:** 117V (Mínimo regulamentar ANEEL).
+
+---
+
+## 20. Auditoria de Macros (VBA) — Fase 21.6
+
+Realizamos uma extração exaustiva do código VBA contido no arquivo `vbaProject.bin` para garantir que não existem lógicas de cálculo elétrico "invisíveis" (Goal Seek, Cálculos Iterativos ou Macros de Eventos).
+
+### 20.1 Resultados da Varredura Heurística
+
+Foram analisados **15 módulos** VBA (Standard, Class e Forms).
+
+- **Módulos de Planilha (`PlanXX.cls`):** Vazios ou apenas com eventos de formatação estética.
+- **Módulo de Planilha (`EstaPasta_de_trabalho.cls`):** Contém apenas `Workbook_Open` para redirecionar o usuário à aba "Menu".
+- **UserForm1 (`UserForm1.frm`):** Contém uma rotina legada de "Desproteção de VBA" (ferramenta de desbloqueio interna), sem qualquer relação com o cálculo de QDT.
+- **Falsos Positivos:** O termo `SEN` (Seno) foi detectado, mas refere-se à palavra `SENHA` nos comentários do código de auditoria.
+
+### 20.2 Veredito de Engenharia
+
+> **[SELADO] AUTOSSUFICIENTE**
+>
+> O modelo matemático da Light contido na `PLANILHA_DESTRAVADA.xlsm` é **100% autossuficiente dentro das células**. Não há dependência de macros para o fechamento do balanço de carga, acúmulo de momento ou validações regulamentares.
+
+---
+
+## 21. Validação de Paridade (Shadow Testing)
+
+O modelo matemático documentado neste dossiê foi submetido ao rigoroso processo de **Shadow Testing** (Fase 21.8).
+
+- **Script de Validação**: `test_21_8_shadow.py`
+- **Cenários Testados**: 18 trechos reais de baixa tensão (Lado Esquerdo e Lado Direito).
+- **Resultados**: Alcançada **PARIDADE DE 100%** (zero desvio significativo) entre o motor Python e a planilha original.
+- **Veredito**: A matemática física baseada em $V^2=220^2$ e Resistência a 20°C é a **Verdade Absoluta** do sistema.
+
+---
+**[DOCUMENTO SELADO - VERSÃO PLATINA]**
+**FIM DO DOSSIE DE DATA MINING (FASE 21)**
+
+---
+
+## 22. Tradutor Topológico: Grafo Direcionado (DAG) — Fase 21.9.3
+
+### 22.1 Motivação
+
+O frontend (React Flow) envia nós e arestas em ordem arbitrária. O motor elétrico, porém, exige que os postes sejam processados sequencialmente do Trafo (Raiz) à ponta da rede para o acúmulo correto de dV%.
+
+### 22.2 Regras de Validação
+
+| Regra | Descrição |
+|---|---|
+| **Raiz Única** | A rede deve conter exatamente **1 nó Transformador** (raiz do DAG). |
+| **Anti-Anel** | Detectado via `nx.is_directed_acyclic_graph()`. Qualquer ciclo gera erro `TopologyError`. |
+| **Nós Isolados** | Nós sem conexão alguma são ignorados silenciosamente (postes volantes). |
+
+### 22.3 Algoritmo de Ordenação
+
+```python
+# Biblioteca: networkx
+import networkx as nx
+
+# 1. Construir DAG a partir de nodes + edges
+G = nx.DiGraph()
+for edge in edges:
+    G.add_edge(edge.source, edge.target, **edge_attrs)
+
+# 2. Validar
+assert nx.is_directed_acyclic_graph(G), "TopologyError: Ciclo detectado!"
+raiz = [n for n, d in G.in_degree() if d == 0]  # = Trafo
+assert len(raiz) == 1, "TopologyError: Exactamente 1 trafo requerido"
+
+# 3. Bifurcação: Lado 1 e Lado 2 a partir das arestas do Trafo
+filhos_trafo = list(G.successors(raiz[0]))
+lado_1_root, lado_2_root = filhos_trafo[0], filhos_trafo[1]  # se bifurcado
+
+# 4. Topological Sort por subárvore
+lado_1_sorted = list(nx.topological_sort(G.subgraph(lado_1_nodes)))
+lado_2_sorted = list(nx.topological_sort(G.subgraph(lado_2_nodes)))
+```
+
+### 22.4 Output
+
+O parser retorna um `CqtInputSchema` com `lado_1` e `lado_2` já ordenados, prontos para o motor elétrico.
+
+---
+
+## 23. Corrente de Curto-Circuito (Icc) Trifásico Simétrico — Fase 21.9.4
+
+### 23.1 Matememática Vetorial
+
+A corrente de curto-circuito é calculada utilizando números complexos (`cmath`) para a soma vetorial das impedâncias ao longo dos trechos:
+
+```
+Z_total = Z_trafo + Σ Z_trechos
+
+Onde Z = R + jX  (número complexo)
+```
+
+### 23.2 Impedância do Transformador
+
+O catálogo não fornece X/R explícito. Utiliza-se a relação empírica **X/R = 3.0** para transformadores de distribuição da Light:
+
+```
+|Z_trafo| = (dV_trafo% / 100) × (V² / S_nom)
+
+Decomposição:
+  R_trafo = |Z_trafo| / √(1 + 3²)  =  |Z_trafo| / √10
+  X_trafo = 3.0 × R_trafo
+  Z_trafo = complex(R_trafo, X_trafo)
+```
+
+### 23.3 Impedância dos Cabos
+
+Os valores R_km e X_km são lidos diretamente de `cables_catalog_light.json` (temperatura de referência: 20°C):
+
+```python
+Z_trecho = complex(R_km * L_km,  X_km * L_km)
+Z_total += Z_trecho  # Acúmulo top-down
+```
+
+### 23.4 Fórmula do Icc Trifásico
+
+```
+Icc = U_nominal / |Z_total|
+```
+
+> **Representa o pior caso** (Curto-Circuit Trifásico Simétrico) usado para dimensionar disjuntores e fusíveis NH. O Icc decresce monotonicamente com a distância ao trafo.
+
+### 23.5 Valores de Referência
+
+| Trafo (kVA) | Icc esperado na Raiz |
+|---|---|
+| 112.5 kVA | ~6.5 kA |
+| 250 kVA | ~14 kA |
+| 500 kVA | ~17 kA |
+
+---
+
+## 24. Verificação Térmica dos Cabos (Ampacidade) — Fase 21.9.5
+
+### 24.1 Origem da Fórmula (Engenharia Reversa)
+
+A fórmula foi extraída diretamente da aba `QDT Dutra 2.3 Lado Esquerdo`, célula `AB13`, usando `openpyxl` com `data_only=False`.
+
+### 24.2 Modelo de Aquecimento Linear
+
+```
+T_cabo = 30 + (I_carga / I_ampacidade) × 60
+
+Onde:
+  I_carga = S_kVA / (U_nominal × √3)   [para rede trifásica]
+  I_carga = S_kVA / U_nominal            [para rede monofásica/bifásica]
+  I_ampacidade: Lido de `cables_catalog_light.json` (.ampacity_a)
+```
+
+> **Temperatura ambiente base: 30°C.** O intervalo de aquecimento admissível é **60°C** (de 30°C até 90°C para XLPE).
+
+### 24.3 Limites Térmicos
+
+| Tipo de Cabo | Limite Térmico | Status |
+|---|---|---|
+| XLPE / EPR (padrão) | **90.1°C** | `"Ok !"` se T ≤ 90.1°C |
+| PVC (`13 Al`, `21 Al`, `53 Al`) | **70.1°C** | `"Ok !"` se T ≤ 70.1°C; `"Reprovado!"` se > 70.1°C |
+
+### 24.4 Caso de Prova (Validação)
+
+```
+Cabo: 240 Cu | I_amp = 430A | Carga = 99.62 kVA @ 220V/3Ø
+I_carga = 99.62 / (0.220 × √3) = 261.4 A
+T = 30 + (261.4 / 430) × 60 = 30 + 36.5 = 66.5°C  ✅
+```
+
+---
+
+## 25. Carregamento do Transformador com Margem de Crescimento — Fase 21.9.6
+
+### 25.1 Motivação Engenharia
+
+Em áreas com expansão urbanão acelerada (clandestinos, novos empreendimentos), um transformador com **85 kVA de carga atual** em um trafo de **100 kVA** pode parecer adequado (85%). Porém, com **15% de margem de crescimento já esperada**, o trafo já está **100% comprometido**.
+
+### 25.2 Fórmula Correta de Projeção
+
+> **Erro comum de mercado:** `Carga_Projetada = Carga_Atual × 1.15` *(ERRADO — subestima o impacto)*
+
+**Fórmula correta (Projeção Real):**
+
+```
+Carga_Projetada = Carga_Atual / (1 - Margem)
+```
+
+Onde `Margem` é a fração decimal da capacidade já reservada para crescimento (padrão: **0.15 = 15%**).
+
+**Interpretação:** garante que a carga atual ocupe exatamente a porção `(1 - Margem)` do trafo.
+
+### 25.3 Cálculo do Carregamento
+
+```
+trafo_loading_percent = (Carga_Projetada / Trafo_Nominal_kVA) × 100
+
+trafo_status:
+  ≤ 100% → "Ok"
+   > 100% → "Sobrecarga"
+```
+
+### 25.4 Caso de Prova (Validação)
+
+```
+Carga Atual = 85 kVA | Margem = 15% | Trafo = 100 kVA
+
+Carga_Projetada = 85 / (1 - 0.15) = 85 / 0.85 = 100.0 kVA  exatos
+Carregamento    = (100.0 / 100) × 100 = 100.0%
+Status          = "Ok"  ✅
+```
+
+### 25.5 Parâmetros no Schema
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `growth_margin_pct` | float (input) | Margem de crescimento. Default: **0.15** |
+| `carga_atual_kva` | float (output) | `leitura_trafo × 0.375` |
+| `carga_projetada_kva` | float (output) | `carga_atual / (1 - margem)` |
+| `trafo_loading_percent` | float (output) | `(projetada / nominal) × 100` |
+| `trafo_status` | str (output) | `"Ok"` ou `"Sobrecarga"` |
+
+---
+**[DOCUMENTO SELADO - VERSÃO PLATINA]**
+**FIM DO DOSSIE DE ENGENHARIA REVERSA E DATA MINING (FASES 21.1 – 21.9.9)**
