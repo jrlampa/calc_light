@@ -47,3 +47,21 @@ export async function loadCanvas(projectId: number) {
     const response = await api.get(`/projects/${projectId}/canvas`);
     return response.data;
 }
+
+// ── PDF Memorial (Fase 24) ──────────────────────────────────────────────────
+
+/** Gera e inicia o download do Memorial de Cálculo (PDF) para o projeto. */
+export async function downloadProjectReport(projectId: number): Promise<void> {
+    const response = await api.get(`/api/v1/projects/${projectId}/report`, {
+        responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `memorial_cqt_projeto_${projectId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+}
