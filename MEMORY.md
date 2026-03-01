@@ -114,6 +114,7 @@ calc_light/
 ## Domínio de Negócio (Cálculo de Tração)
 
 A lógica principal de cálculo envolve Níveis (MT1, MT2, BT, Ramais) e Tramos (T1 a T4). As fórmulas extraídas da planilha são:
+
 - **Tração dos Condutores (daN):** `(Peso_Total * Vão^2) / (8 * Flecha)`
 - **Vento (daN):** `Força_Vento_X = Pressão_Vento * (Vão/2) * Diâmetro_Total * COS(Ângulo)`
 - **Decomposição:** Tração decomposta em `Compx` e `Compy` de acordo com o ângulo do vão.
@@ -127,11 +128,13 @@ de arrasto significativa contra o vento. A concessionária Enel/Light NÃO exige
 padrão. Portanto, é tratado como "Modo Avançado" 100% opcional (Opt-in) por projeto.
 
 ### Flag `enable_equipment_drag`
+
 - **Tabela:** `projects.enable_equipment_drag INTEGER DEFAULT 0`
 - **Migração:** `_apply_migrations()` idempotente em `database.py`
 - **Endpoint:** `PATCH /projects/{id}/settings` → `{"enable_equipment_drag": true|false}`
 
 ### Catálogo Estático `catalog_equipment`
+
 | Nome | Área Arrasto (m²) |
 |---|---|
 | Trafo 45 kVA | 0.85 |
@@ -143,9 +146,11 @@ padrão. Portanto, é tratado como "Modo Avançado" 100% opcional (Opt-in) por p
 | Chave a Óleo MT | 0.20 |
 
 ### Tabela `node_equipment` (join)
+
 `(node_id, equipment_id)` — PRIMARY KEY composta, CASCADE DELETE.
 
 ### Motor Matemático Condicional (`calculators.py`)
+
 - `calculate_level_resultant(inputs, conductors, extra_drag_area_m2=0.0)`
 - Quando `enable_equipment_drag=False`: `extra_drag_area_m2` é sempre 0 (padrão Enel)
 - Quando `enable_equipment_drag=True`: `extra_drag_area_m2 = soma das áreas dos equipamentos do nó`
@@ -153,6 +158,7 @@ padrão. Portanto, é tratado como "Modo Avançado" 100% opcional (Opt-in) por p
 - Conversão: `equipament_wind_area = area / (span_m / 2)` → somado ao diâmetro do poste
 
 ### API Fase 19
+
 | Rota | Método | Descrição |
 |---|---|---|
 | `GET /catalogs/equipment` | GET | Catálogo estático de equipamentos |
@@ -161,6 +167,7 @@ padrão. Portanto, é tratado como "Modo Avançado" 100% opcional (Opt-in) por p
 | `PUT /projects/{id}/nodes/{nid}/equipment` | PUT | Substitui lista de equipamentos do nó |
 
 ### Frontend Fase 19
+
 - **`ProjectSettingsPanel.tsx`** — Toggle iOS-style + tooltip "Ative apenas se exigido pela concessionária..."
 - **`NodeEquipmentSelector.tsx`** — Pill multi-select por nó; mostra área total acumulada
 - Nós na lista clicáveis quando modo avançado ativo → abre seletor de equipamentos
@@ -168,6 +175,7 @@ padrão. Portanto, é tratado como "Modo Avançado" 100% opcional (Opt-in) por p
 ## Fase 17 — Solver Global / Motor de Otimização
 
 ### Algoritmo (solver.py → run_solver)
+
 ```
 Para cada nó REAL (is_ghost=False):
   1. Calcula esforço atual via _compute_effort()
@@ -198,6 +206,7 @@ Para cada nó REAL (is_ghost=False):
 ## Fase 20 — Auditoria Final e Consolidação
 
 ### Regra dos 500 Linhas — Arquivos Refatorados
+
 | Arquivo | Antes | Depois | Extraídos |
 |---|---|---|---|
 | `App.tsx` | 508 | 413 | `NewProjectModal.tsx`, `ProjectSidebar.tsx` |
@@ -205,6 +214,7 @@ Para cada nó REAL (is_ghost=False):
 | `TopologyDiagram.tsx` | 561 | 120 | `TopologyCanvas.tsx` |
 
 ### Cobertura de Testes (Pareto 80/20)
+
 | Camada | Cobertura |
 |---|---|
 | `domain/calculators.py` | **100%** |
@@ -218,10 +228,11 @@ Para cada nó REAL (is_ghost=False):
 | Aplicação completa | **94%+** |
 
 ### Docker Ecosystem
+
 - `backend/Dockerfile` → Multi-stage (builder + runner), non-root user `app`
 - `frontend/Dockerfile.prod` → Multi-stage (node:20-alpine build + nginx:1.27-alpine serve)
 - `docker-compose.yml` → Healthcheck backend, `named volume db_data`, nginx frontend na porta 80
-- `.dockerignore` → Exclui testes, __pycache__, .db, node_modules, dist, IDE files
+- `.dockerignore` → Exclui testes, **pycache**, .db, node_modules, dist, IDE files
 
 ## GIS Parser
 
@@ -274,6 +285,7 @@ calc_light/
 ### Como Iniciar o Sistema (One-Click Start)
 
 **Linux / macOS:**
+
 ```bash
 # Na primeira vez, tornar os scripts executáveis:
 chmod +x iniciar.sh parar.sh atualizar.sh backup_db.sh
@@ -283,11 +295,13 @@ chmod +x iniciar.sh parar.sh atualizar.sh backup_db.sh
 ```
 
 **Windows:**
+
 ```
 Duplo-clique em: iniciar.bat
 ```
 
 O script automaticamente:
+
 1. Cria as pastas `local_data/db/`, `local_data/templates/` e `backups/` se não existirem
 2. Copia `backend/app/templates/modelo.xlsm` → `local_data/templates/` (apenas na 1ª vez)
 3. Executa `docker compose -f docker-compose.local.yml up -d --build`
@@ -298,11 +312,13 @@ O script automaticamente:
 ### Como Parar o Sistema (com Backup Automático)
 
 **Linux / macOS:**
+
 ```bash
 ./parar.sh
 ```
 
 **Windows:**
+
 ```
 Duplo-clique em: parar.bat
 ```
@@ -315,16 +331,19 @@ protegendo contra corrupção acidental na parada do sistema.
 Quando houver novos commits no repositório:
 
 **Linux / macOS:**
+
 ```bash
 ./atualizar.sh
 ```
 
 **Windows:**
+
 ```
 Duplo-clique em: atualizar.bat
 ```
 
 O script `atualizar` realiza:
+
 1. **Backup pré-atualização** — salvo com sufixo `_pre-update_` em `./backups/`
 2. **`git pull`** — baixa as últimas alterações
 3. **`docker compose build`** — reconstrói as imagens com o novo código
@@ -334,11 +353,13 @@ O script `atualizar` realiza:
 ### Como Fazer Backup Manual
 
 **Linux / macOS:**
+
 ```bash
 ./backup_db.sh
 ```
 
 **Windows:**
+
 ```
 Duplo-clique em: backup_db.bat
 ```
@@ -349,12 +370,14 @@ os **30 backups mais recentes**.
 ### Como Restaurar um Backup (Disaster Recovery)
 
 1. **Parar o sistema:**
+
    ```bash
    ./parar.sh        # Linux / macOS
    # parar.bat       # Windows
    ```
 
 2. **Substituir o banco pelo backup desejado:**
+
    ```bash
    # Linux / macOS:
    cp backups/cacl_backup_2026-03-01_14-30-05.db local_data/db/cacl_light.db
@@ -364,6 +387,7 @@ os **30 backups mais recentes**.
    ```
 
 3. **Reiniciar:**
+
    ```bash
    ./iniciar.sh      # Linux / macOS
    # iniciar.bat     # Windows
@@ -377,7 +401,7 @@ software extra.
 
 | Ação | URL |
 |---|---|
-| Visualizar tabelas e dados | **http://localhost:8080** |
+| Visualizar tabelas e dados | **<http://localhost:8080>** |
 
 - O banco é montado em **modo leitura** (`:ro`) — sem risco de alteração acidental
 - Logs limitados a `5m / 2 arquivos` para não lotar o HD
@@ -407,9 +431,89 @@ logging:
 
 | Serviço | URL | Descrição |
 |---|---|---|
-| Aplicação CACL LIGHT | http://localhost | Frontend React via Nginx |
-| API Backend | http://localhost:8000/docs | FastAPI Swagger docs |
-| Health Check | http://localhost:8000/health | Status do backend |
-| Visualizador SQLite | http://localhost:8080 | sqlite-web (read-only) |
+| Aplicação CACL LIGHT | <http://localhost> | Frontend React via Nginx |
+| API Backend | <http://localhost:8000/docs> | FastAPI Swagger docs |
+| Health Check | <http://localhost:8000/health> | Status do backend |
+| Visualizador SQLite | <http://localhost:8080> | sqlite-web (read-only) |
 
+---
 
+## Fase 21.1 — Mapeamento Topográfico (Engenharia Reversa)
+
+**Objetivo:** Mapear a estrutura da `PLANILHA_DESTRAVADA.xlsm` para identificar abas de catálogo, nomes definidos e coordenadas de dados estáticos.
+
+### Ferramentas de Mineração
+
+- `miner_21_1_topology.py`: Script exploratory usando `openpyxl` para extrair metadados e localizar catálogos via heurística de palavras-chave.
+- `21_1_TOPOLOGY_REPORT.txt`: Relatório gerado contendo o dicionário de Named Ranges e coordenadas das abas.
+
+### Descobertas Iniciais
+
+- O mapeamento foca em dados de cabos (Resistência, Reatância, Ampacidade) e transformadores (kVA).
+- O script identifica o estado de visibilidade das abas (Visible, Hidden, VeryHidden) para localizar tabelas "escondidas" pela Light.
+
+---
+
+## Fase 21.2 — ETL de Catálogos Elétricos (Light)
+
+**Script:** `miner_21_2_catalogs.py` | **Branch:** `feature/cqt-mining`
+
+### Fontes de Dados Extraídas
+
+| Aba (xlsm) | Estado | Conteúdo |
+|---|---|---|
+| Ramais | visible | Condutores BT multiplex: R, X, Ampacidade |
+| Tabela | hidden | Cabos BT rede + Cabos MT Subterrâneo e Aéreo |
+| Coeficiente Unitário | hidden | **CRÍTICO**: coef K → dV% = K × kVA × L_km |
+| Alocação % de tensão | hidden | Cenários de QDT por trafo (Tab_B, Tab_C, Tab_D) |
+
+### JSONs Gerados (Seeders para Fase 22)
+
+| Arquivo | Registros | Uso |
+|---|---|---|
+| cables_catalog_light.json | 46 | Catálogo de cabos BT/MT |
+| voltage_drop_coef_light.json | 14 | Coeficiente K de QDT por condutor (crítico para CQT) |
+| transformers_catalog_light.json | 7 | Cenários de QDT por trafo |
+
+### Schema cables_catalog_light.json
+```json
+{
+  "source": "Ramais | Tabela",
+  "voltage_level": "BT | MT",
+  "conductor_name": "53 QX",
+  "section_mm2": null,
+  "material": "Al | Cu | CC",
+  "r_ohm_per_km": 0.6641,
+  "x_ohm_per_km": 0.1311,
+  "ampacity_a": null,
+  "conductor_type": "multiplex_aerial | network | underground | aerial"
+}
+```
+
+### Schema voltage_drop_coef_light.json (CRÍTICO para CQT)
+```json
+{
+  "source": "Coeficiente Unitário",
+  "conductor_name": "53 QX",
+  "r_ohm_per_km": 0.6641,
+  "x_ohm_per_km": 0.1311,
+  "voltage_drop_coef_k": 0.13985879198405582
+}
+```
+> **Fórmula:** dV% = K × kVA_carga × L_km
+
+### Schema transformers_catalog_light.json
+```json
+{
+  "source": "Alocação % de tensão",
+  "tabela": "Tab_B_Aereo-Aereo",
+  "power_kva": 300.0,
+  "coincidence_factor_pct": 75.0,
+  "primary_voltage_v": 13200.0,
+  "secondary_voltage_v": 220.0,
+  "dv_primary_pct": 3.5,
+  "dv_transformer_pct": 4.5,
+  "dv_secondary_pct": 5.0,
+  "dv_branch_pct": 1.5
+}
+```

@@ -1,0 +1,86 @@
+[
+  {
+    "source": "Alocação % de tensão",
+    "tabela": "Tab_B_Aereo-Aereo",
+    "power_kva": 500.0,
+    "coincidence_factor_pct": 75.0,
+    "primary_voltage_v": 13200.0,
+    "secondary_voltage_v": 220.0,
+    "dv_primary_pct": 3.5,
+    "dv_transformer_pct": 6.5,
+    "dv_secondary_pct": 3.0,
+    "dv_branch_pct": 1.5
+  },
+  {
+    "source": "Alocação % de tensão",
+    "tabela": "Tab_B_Aereo-Aereo",
+    "power_kva": 1000.0,
+    "coincidence_factor_pct": 75.0,
+    "primary_voltage_v": 13200.0,
+    "secondary_voltage_v": 220.0,
+    "dv_primary_pct": 3.5,
+    "dv_transformer_pct": 6.5,
+    "dv_secondary_pct": 3.0,
+    "dv_branch_pct": 1.5
+  },
+  {
+    "source": "Alocação % de tensão",
+    "tabela": "Tab_B_Aereo-Aereo",
+    "power_kva": 300.0,
+    "coincidence_factor_pct": 75.0,
+    "primary_voltage_v": 13200.0,
+    "secondary_voltage_v": 382.6,
+    "dv_primary_pct": 3.5,
+    "dv_transformer_pct": 4.5,
+    "dv_secondary_pct": 0.0,
+    "dv_branch_pct": 6.9
+  },
+  {
+    "source": "Alocação % de tensão",
+    "tabela": "Tab_C_Aereo-Subterraneo",
+    "power_kva": 500.0,
+    "coincidence_factor_pct": 75.0,
+    "primary_voltage_v": 13200.0,
+    "secondary_voltage_v": 220.0,
+    "dv_primary_pct": 4.5,
+    "dv_transformer_pct": 6.5,
+    "dv_secondary_pct": 2.7,
+    "dv_branch_pct": 1.5
+  },
+  {
+    "source": "Alocação % de tensão",
+    "tabela": "Tab_C_Aereo-Subterraneo",
+    "power_kva": 1000.0,
+    "coincidence_factor_pct": 75.0,
+    "primary_voltage_v": 13200.0,
+    "secondary_voltage_v": 220.0,
+    "dv_primary_pct": 4.5,
+    "dv_transformer_pct": 6.5,
+    "dv_secondary_pct": 2.7,
+    "dv_branch_pct": 1.5
+  },
+  {
+    "source": "Alocação % de tensão",
+    "tabela": "Tab_C_Aereo-Subterraneo",
+    "power_kva": 300.0,
+    "coincidence_factor_pct": 75.0,
+    "primary_voltage_v": 13200.0,
+    "secondary_voltage_v": 382.6,
+    "dv_primary_pct": 4.5,
+    "dv_transformer_pct": 4.5,
+    "dv_secondary_pct": 0.0,
+    "dv_branch_pct": 6.2
+  },
+  {
+    "source": "Alocação % de tensão",
+    "tabela": "Tab_D_Reticulado",
+    "power_kva": 3001000.0,
+    "coincidence_factor_pct": 75.0,
+    "primary_voltage_v": 13200.0,
+    "secondary_voltage_v": 216.5,
+    "dv_primary_pct": 2.4,
+    "dv_transformer_pct": 6.0,
+    "dv_secondary_pct": 2.5,
+    "dv_branch_pct": 1.5
+  }
+]

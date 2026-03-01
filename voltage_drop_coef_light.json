@@ -1,0 +1,100 @@
+[
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "33 AA",
+    "r_ohm_per_km": 1.0903,
+    "x_ohm_per_km": 0.4034,
+    "voltage_drop_coef_k": 0.24019300620579181
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "33 AC",
+    "r_ohm_per_km": 1.0254,
+    "x_ohm_per_km": 0.3419,
+    "voltage_drop_coef_k": 0.2233260601622641
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "53 AA",
+    "r_ohm_per_km": 0.7059,
+    "x_ohm_per_km": 0.3705,
+    "voltage_drop_coef_k": 0.16471556691382963
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "53 AC",
+    "r_ohm_per_km": 0.6456,
+    "x_ohm_per_km": 0.3235,
+    "voltage_drop_coef_k": 0.14919753390048443
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "107 A",
+    "r_ohm_per_km": 0.3225,
+    "x_ohm_per_km": 0.2968,
+    "voltage_drop_coef_k": 0.09055539996267538
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "107 AC",
+    "r_ohm_per_km": 0.325,
+    "x_ohm_per_km": 0.2968,
+    "voltage_drop_coef_k": 0.09093614360819147
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "201 A",
+    "r_ohm_per_km": 0.1731,
+    "x_ohm_per_km": 0.2686,
+    "voltage_drop_coef_k": 0.06602187621895751
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "201 AC",
+    "r_ohm_per_km": 0.1731,
+    "x_ohm_per_km": 0.2686,
+    "voltage_drop_coef_k": 0.06602187621895751
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "53 QX",
+    "r_ohm_per_km": 0.6641,
+    "x_ohm_per_km": 0.1311,
+    "voltage_drop_coef_k": 0.13985879198405582
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "85 QX",
+    "r_ohm_per_km": 0.418,
+    "x_ohm_per_km": 0.1279,
+    "voltage_drop_coef_k": 0.09031606207978218
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "107 QX",
+    "r_ohm_per_km": 0.3313,
+    "x_ohm_per_km": 0.129,
+    "voltage_drop_coef_k": 0.07345635270239954
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "53 MX",
+    "r_ohm_per_km": 0.6641,
+    "x_ohm_per_km": 0.1311,
+    "voltage_drop_coef_k": 0.13985879198405582
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "70 MMX",
+    "r_ohm_per_km": 0.5697,
+    "x_ohm_per_km": 0.126,
+    "voltage_drop_coef_k": 0.12055109501134868
+  },
+  {
+    "source": "Coeficiente Unitário",
+    "conductor_name": "185 MMX",
+    "r_ohm_per_km": 0.2149,
+    "x_ohm_per_km": 0.1178,
+    "voltage_drop_coef_k": 0.05063410576365036
+  }
+]
