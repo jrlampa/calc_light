@@ -1,0 +1,594 @@
+{
+  "_metadata": {
+    "fase": "21.3b",
+    "projeto": "CACL LIGHT",
+    "fonte": "PLANILHA_DESTRAVADA.xlsm",
+    "descricao": "Algoritmo de Rateio de Carga: Top-Down (Rede Normal) e Bottom-Up (Clandestinos)"
+  },
+  "catalogo_condutores_ampacidade": [
+    {
+      "col_index": 3,
+      "conductor_name": "5",
+      "bitola": "5",
+      "material": "CC",
+      "ampacity_a": 66.0
+    },
+    {
+      "col_index": 4,
+      "conductor_name": "8",
+      "bitola": "8",
+      "material": "CC",
+      "ampacity_a": 88.0
+    },
+    {
+      "col_index": 5,
+      "conductor_name": "13",
+      "bitola": "13",
+      "material": "CC",
+      "ampacity_a": 116.0
+    },
+    {
+      "col_index": 6,
+      "conductor_name": "21",
+      "bitola": "21",
+      "material": "CC",
+      "ampacity_a": 151.0
+    },
+    {
+      "col_index": 7,
+      "conductor_name": "33",
+      "bitola": "33",
+      "material": "CC",
+      "ampacity_a": 205.0
+    },
+    {
+      "col_index": 8,
+      "conductor_name": "53",
+      "bitola": "53",
+      "material": "CC",
+      "ampacity_a": 272.0
+    },
+    {
+      "col_index": 9,
+      "conductor_name": "67",
+      "bitola": "67",
+      "material": "CC",
+      "ampacity_a": 313.0
+    },
+    {
+      "col_index": 10,
+      "conductor_name": "85",
+      "bitola": "85",
+      "material": "CC",
+      "ampacity_a": 366.0
+    },
+    {
+      "col_index": 11,
+      "conductor_name": "107",
+      "bitola": "107",
+      "material": "CC",
+      "ampacity_a": 418.0
+    },
+    {
+      "col_index": 12,
+      "conductor_name": "127",
+      "bitola": "127",
+      "material": "CC",
+      "ampacity_a": 466.0
+    },
+    {
+      "col_index": 13,
+      "conductor_name": "253",
+      "bitola": "253",
+      "material": "CC",
+      "ampacity_a": 710.0
+    },
+    {
+      "col_index": 14,
+      "conductor_name": "6 AWG",
+      "bitola": "13 DX",
+      "material": "6 AWG",
+      "ampacity_a": 78.0
+    },
+    {
+      "col_index": 15,
+      "conductor_name": "6 AWG",
+      "bitola": "13 TX",
+      "material": "6 AWG",
+      "ampacity_a": 80.0
+    },
+    {
+      "col_index": 16,
+      "conductor_name": "6 AWG",
+      "bitola": "13 QX",
+      "material": "6 AWG",
+      "ampacity_a": 72.0
+    },
+    {
+      "col_index": 17,
+      "conductor_name": "4 AWG",
+      "bitola": "21 QX",
+      "material": "4 AWG",
+      "ampacity_a": 95.0
+    },
+    {
+      "col_index": 18,
+      "conductor_name": "1/0",
+      "bitola": "53 QX",
+      "material": "1/0",
+      "ampacity_a": 165.0
+    },
+    {
+      "col_index": 19,
+      "conductor_name": "3/0",
+      "bitola": "85 QX",
+      "material": "3/0",
+      "ampacity_a": 220.0
+    },
+    {
+      "col_index": 20,
+      "conductor_name": "4/0",
+      "bitola": "107 QX",
+      "material": "4/0",
+      "ampacity_a": 254.0
+    },
+    {
+      "col_index": 21,
+      "conductor_name": "MMX",
+      "bitola": "70",
+      "material": "MMX",
+      "ampacity_a": 227.0
+    },
+    {
+      "col_index": 22,
+      "conductor_name": "MMX",
+      "bitola": "185",
+      "material": "MMX",
+      "ampacity_a": 423.0
+    }
+  ],
+  "pesos_postes": {
+    "lado_1_Trafo": {
+      "postes": [
+        {
+          "poste_label": "Poste 1",
+          "row": 25,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 2",
+          "row": 26,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 3",
+          "row": 27,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 4",
+          "row": 28,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 5",
+          "row": 29,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 6",
+          "row": 30,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 7",
+          "row": 31,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 8",
+          "row": 32,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 9",
+          "row": 33,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 10",
+          "row": 34,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 11",
+          "row": 35,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 12",
+          "row": 36,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 13",
+          "row": 37,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 14",
+          "row": 38,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 15",
+          "row": 39,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 16",
+          "row": 40,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 17",
+          "row": 41,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 18",
+          "row": 42,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 19",
+          "row": 43,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 20",
+          "row": 44,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 21",
+          "row": 45,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 22",
+          "row": 46,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 23",
+          "row": 47,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 24",
+          "row": 48,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 25",
+          "row": 49,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        }
+      ],
+      "w_total_planilha": null,
+      "w_total_calculado": 0.0
+    },
+    "lado_2_Trafo": {
+      "postes": [
+        {
+          "poste_label": "Poste 1",
+          "row": 56,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 2",
+          "row": 57,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 3",
+          "row": 58,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 4",
+          "row": 59,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 5",
+          "row": 60,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 6",
+          "row": 61,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 7",
+          "row": 62,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 8",
+          "row": 63,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 9",
+          "row": 64,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 10",
+          "row": 65,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 11",
+          "row": 66,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 12",
+          "row": 67,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 13",
+          "row": 68,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 14",
+          "row": 69,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 15",
+          "row": 70,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 16",
+          "row": 71,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 17",
+          "row": 72,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 18",
+          "row": 73,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 19",
+          "row": 74,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 20",
+          "row": 75,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 21",
+          "row": 76,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 22",
+          "row": 77,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 23",
+          "row": 78,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 24",
+          "row": 79,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        },
+        {
+          "poste_label": "Poste 25",
+          "row": 80,
+          "ramais_por_condutor": {},
+          "peso_w_calculado": 0.0,
+          "peso_w_planilha": null
+        }
+      ],
+      "w_total_planilha": null,
+      "w_total_calculado": 0.0
+    }
+  },
+  "algoritmo_top_down_formulas": {
+    "entrada": {
+      "G3": {
+        "descricao": "Leitura do Transformador (input manual do usuário)",
+        "formula": "INPUT"
+      },
+      "G5": {
+        "descricao": "Demanda Máxima = G3 × 0.375",
+        "formula": "=IF(G3=\"\",\"\",G3*0.375)"
+      },
+      "G6": {
+        "descricao": "Fator de Temperatura (label)",
+        "formula": "LABEL"
+      },
+      "G7": {
+        "descricao": "Fator de Temperatura (valor)",
+        "formula": "1"
+      },
+      "G8": {
+        "descricao": "Demanda Corrigida (label)",
+        "formula": "LABEL"
+      },
+      "G9": {
+        "descricao": "Demanda Corrigida = G7 × G5",
+        "formula": "=IF(G7=\"\",\"\",G7*G5)"
+      }
+    },
+    "rateio_por_poste": {
+      "descricao": "Para cada poste n (linha 5..28 = Postes 1..25):",
+      "formula_carga_lado1": "C_n = IF(G9='','', G9 × (Ramais!W[n_L1] / (Ramais!W50 + Ramais!W81)))",
+      "formula_carga_lado2": "E_n = IF(G9='','', G9 × (Ramais!W[n_L2] / (Ramais!W50 + Ramais!W81)))",
+      "formula_carga_acum_lado1": "D_n = SUM(C_n : C_28)  ← carga total até o trafo a partir do poste n",
+      "formula_carga_acum_lado2": "F_n = SUM(E_n : E_28)"
+    },
+    "fórmula_C5_exemplo": "=IF($G$9=\"\",\"\",$G$9*(Ramais!W26/(Ramais!$W$50+Ramais!$W$81)))",
+    "fórmula_C9_exemplo": "=IF($G$9=\"\",\"\",$G$9*(Ramais!W30/(Ramais!$W$50+Ramais!$W$81)))"
+  },
+  "coeficientes_qdt_por_classe": {
+    "Comercial": {
+      "fp_cos": 0.85,
+      "fp_sin": 0.5268,
+      "formula_K_por_condutor": "K = R × 0.85 + X × 0.5268",
+      "formula_celula_exemplo_C{row}": "=C11*0.85+C12*0.5268",
+      "descricao": "Coeficiente QDT efetivo considerando FP=0.85 → sin(φ)=0.5268. ΔV% = K × I_A × L_km"
+    },
+    "Residencial": {
+      "fp_cos": 0.95,
+      "fp_sin": 0.3122,
+      "formula_K_por_condutor": "K = R × 0.95 + X × 0.3122",
+      "formula_celula_exemplo_C{row}": "=C11*0.95+C12*0.3122",
+      "descricao": "Coeficiente QDT efetivo considerando FP=0.95 → sin(φ)=0.3122. ΔV% = K × I_A × L_km"
+    },
+    "Misto": {
+      "fp_cos": 0.9,
+      "fp_sin": 0.4359,
+      "formula_K_por_condutor": "K = R × 0.9 + X × 0.4359",
+      "formula_celula_exemplo_C{row}": "=C11*0.9+C12*0.4359",
+      "descricao": "Coeficiente QDT efetivo considerando FP=0.9 → sin(φ)=0.4359. ΔV% = K × I_A × L_km"
+    }
+  },
+  "algoritmo_bottom_up_clandestinos": {
+    "fonte": "ANÁLISE PONTO A PONTO + regra de negócio revelada pelo usuário",
+    "kva_por_cliente_base": 2.22,
+    "perfil_area_60m2_kva": 2.22,
+    "nota": "Para áreas clandestinas, a Light estimativa 2.22 kVA por unidade. Este valor corresponde ao porte de uma UC residencial de ~60m². A demanda agregada aplica o Fator de Diversificação da curva 'ANÁLISE PONTO A PONTO': ΔV% = K × Demanda(N) × L_km onde Demanda(N) = 2.22 × FatorDiv(N).",
+    "formula_fator_diversificacao": {
+      "plateau_inferior": {
+        "condicao": "N ≤ 4",
+        "fator": 3.88
+      },
+      "zona_linear": {
+        "condicao": "5 ≤ N ≤ 295",
+        "formula": "FatorDiv(N) = 3.88 + (N - 4) × 0.56"
+      },
+      "plateau_superior": {
+        "condicao": "N ≥ 296",
+        "fator": 83.0
+      }
+    }
+  }
+}
