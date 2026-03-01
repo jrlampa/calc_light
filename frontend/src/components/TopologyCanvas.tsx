@@ -24,11 +24,12 @@ import '@xyflow/react/dist/style.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
-import { api } from '../api';
-import { useUIStore, useTopologyHistoryStore, type PersistedNode, type PersistedEdge } from '../store';
+import { api, calculateNetwork } from '../api';
+import { useUIStore, useTopologyHistoryStore, useElectricalStore, type PersistedNode, type PersistedEdge } from '../store';
 import CustomNode, { type PoleNodeData } from './CustomNode';
 import CustomEdge, { type ConductorEdgeData } from './CustomEdge';
 import GhostNodeModal, { type GhostNodeChoice } from './GhostNodeModal';
+import ElectricalSidePanel from './ElectricalSidePanel';
 
 // ── TIPOS DA RESPOSTA DA API ─────────────────────────────────────────────
 
@@ -66,6 +67,9 @@ function toPersistedEdge(e: ApiEdge): PersistedEdge {
 
 export default function TopologyCanvas({ projectId }: { projectId: number }) {
     const { selectedNodeId, setSelectedNodeId } = useUIStore();
+    const { setResults, setIsCalculating, isCalculating } = useElectricalStore();
+    // Debounce guard: impede chamadas repetidas em menos de 2 segundos
+    const calcLastRunRef = useRef<number>(0);
     const nodeTypes = useMemo(() => ({ pole: CustomNode }), []);
     const edgeTypes = useMemo(() => ({ conductors: CustomEdge }), []);
     const queryClient = useQueryClient();
@@ -80,6 +84,8 @@ export default function TopologyCanvas({ projectId }: { projectId: number }) {
     const [showGhostModal, setShowGhostModal] = useState(false);
     const connectSourceRef = useRef<string | null>(null);
     const connectDropPosRef = useRef<{ x: number; y: number }>({ x: 200, y: 200 });
+
+    // ── Cálculo CQT declarado após localNodes/topology (ver abaixo, Fase 22)
 
     // ── Fetch da topologia calculada pelo Smart Backend ──────────────────
     const { data: topology, isLoading, isError } = useQuery({
@@ -107,6 +113,47 @@ export default function TopologyCanvas({ projectId }: { projectId: number }) {
         },
         [projectId, setTopologySnapshot]
     );
+
+    // ── Cálculo CQT — Fase 22 ─────────────────────────────────────────────
+    const handleCalculateNetwork = useCallback(async () => {
+        const now = Date.now();
+        if (isCalculating || now - calcLastRunRef.current < 2000) return; // debounce 2s
+        calcLastRunRef.current = now;
+
+        const nodes = localNodes.map(n => ({
+            id: n.id,
+            type: n.type,
+            data: n.data,
+            position: n.position,
+        }));
+        const edges = (topology?.edges ?? []).map((e: ApiEdge) => ({
+            id: e.id,
+            source: e.source,
+            target: e.target,
+            span_length_m: e.span_length_m ?? 50,
+        }));
+
+        setIsCalculating(true);
+        try {
+            const result = await calculateNetwork({ nodes, edges });
+            setResults(
+                result.lado_1 ?? [],
+                result.lado_2 ?? [],
+                {
+                    carga_atual_kva: result.carga_atual_kva,
+                    carga_projetada_kva: result.carga_projetada_kva,
+                    trafo_loading_percent: result.trafo_loading_percent,
+                    trafo_status: result.trafo_status,
+                }
+            );
+            toast.success('Cálculo CQT concluído!', { icon: '⚡', duration: 3000 });
+        } catch (err) {
+            toast.error('Erro no cálculo elétrico. Verifique a topologia.');
+            console.error(err);
+        } finally {
+            setIsCalculating(false);
+        }
+    }, [isCalculating, localNodes, topology, setResults, setIsCalculating]);
 
     const apiMappedNodes = useMemo<Node<PoleNodeData>[]>(() => {
         const apiNodes: ApiNode[] = topology?.nodes ?? [];
@@ -285,10 +332,10 @@ export default function TopologyCanvas({ projectId }: { projectId: number }) {
 
     // ── Atalhos de teclado ────────────────────────────────────────────────
     const nudgeOpts = { preventDefault: true, enabled: !!selectedNodeId } as const;
-    useHotkeys('up',    () => nudgeSelectedNode(0, -NUDGE_PX), nudgeOpts);
-    useHotkeys('down',  () => nudgeSelectedNode(0,  NUDGE_PX), nudgeOpts);
-    useHotkeys('left',  () => nudgeSelectedNode(-NUDGE_PX, 0), nudgeOpts);
-    useHotkeys('right', () => nudgeSelectedNode( NUDGE_PX, 0), nudgeOpts);
+    useHotkeys('up', () => nudgeSelectedNode(0, -NUDGE_PX), nudgeOpts);
+    useHotkeys('down', () => nudgeSelectedNode(0, NUDGE_PX), nudgeOpts);
+    useHotkeys('left', () => nudgeSelectedNode(-NUDGE_PX, 0), nudgeOpts);
+    useHotkeys('right', () => nudgeSelectedNode(NUDGE_PX, 0), nudgeOpts);
     useHotkeys(
         ['delete', 'backspace'],
         () => {
@@ -353,6 +400,12 @@ export default function TopologyCanvas({ projectId }: { projectId: number }) {
         );
     }
 
+    // Detecta nó selecionado para painel lateral
+    const selectedNode = selectedNodeId != null
+        ? localNodes.find(n => n.id === String(selectedNodeId))
+        : null;
+    const selectedIsTransformer = (selectedNode?.data as PoleNodeData)?.is_transformer ?? false;
+
     return (
         <>
             <ReactFlow
@@ -393,7 +446,42 @@ export default function TopologyCanvas({ projectId }: { projectId: number }) {
                     className="!bg-white/80 !border-slate-200 !rounded-lg !shadow-md"
                     maskColor="rgba(148,163,184,0.1)"
                 />
+
+                {/* ── Botão Calcular Rede CQT — Fase 22 ── */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50">
+                    <button
+                        onClick={handleCalculateNetwork}
+                        disabled={isCalculating}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold
+                            shadow-lg border transition-all duration-200 select-none
+                            ${isCalculating
+                                ? 'bg-slate-700/90 text-slate-400 border-slate-600 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white border-white/20 hover:shadow-[0_4px_20px_rgba(139,92,246,0.5)] active:scale-95'
+                            }`}
+                    >
+                        {isCalculating ? (
+                            <>
+                                <span className="w-4 h-4 border-2 border-slate-400 border-t-violet-400 rounded-full animate-spin" />
+                                Calculando...
+                            </>
+                        ) : (
+                            <>
+                                <span>⚡</span>
+                                Calcular Rede CQT
+                            </>
+                        )}
+                    </button>
+                </div>
             </ReactFlow>
+
+            {/* ── Painel Lateral Elétrico — Fase 22 ── */}
+            {selectedNodeId != null && (
+                <ElectricalSidePanel
+                    nodeId={String(selectedNodeId)}
+                    isTransformer={selectedIsTransformer}
+                    onClose={() => setSelectedNodeId(null)}
+                />
+            )}
 
             {showGhostModal && (
                 <GhostNodeModal

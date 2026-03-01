@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Routers modulares (Arquitetura DDD - Fase 3+)
 from app.api.routers import calculations, catalogs, forces, gis, projects, solver, topology
+from app.api.routers.cqt_network import router_v1 as cqt_network_router
 
 APP_VERSION = "0.20.0"
 
@@ -43,6 +44,7 @@ app.include_router(calculations.router)
 app.include_router(topology.router)
 app.include_router(forces.router)
 app.include_router(solver.router)
+app.include_router(cqt_network_router)  # Fase 22: Motor CQT (POST /api/v1/calculate-network)
 
 @app.get("/health", tags=["System"])
 def health_check():

@@ -30,3 +30,9 @@ export async function downloadProjectExcel(projectId: number): Promise<void> {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 100);
 }
+/** Executa o Motor CQT Elétrico completo (Fase 22).
+ *  Envia o grafo do React Flow e recebe CQT%, Icc, Temperatura e Carregamento do Trafo. */
+export async function calculateNetwork(payload: object) {
+    const response = await api.post('/api/v1/calculate-network', payload);
+    return response.data;
+}
