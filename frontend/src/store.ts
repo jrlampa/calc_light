@@ -107,3 +107,56 @@ export const useTopologyHistoryStore = create<TopologyHistoryState>()(
     )
 );
 
+// ── Electrical Results Store — Fase 22 (Motor CQT) ───────────────────────────
+// Isolado da TopologyHistoryStore para não poluir o undo/redo com resultados de cálculo.
+
+export interface TrechoResult {
+    id: string;
+    carga_kva: number;
+    carga_acum_kva: number;
+    dv_trecho_perc: number;
+    dv_acum_perc: number;
+    v_final: number;
+    icc_amperes: number;
+    cable_temp_celsius: number;
+    thermal_status: string;
+    status: string;
+}
+
+export interface TrafoDados {
+    carga_atual_kva: number;
+    carga_projetada_kva: number;
+    trafo_loading_percent: number;
+    trafo_status: string;
+}
+
+interface ElectricalState {
+    resultsByNode: Record<string, TrechoResult>;
+    trafoDados: TrafoDados | null;
+    isCalculating: boolean;
+    lastCalculatedAt: string | null;
+    setResults: (lado1: TrechoResult[], lado2: TrechoResult[], trafo: TrafoDados) => void;
+    setIsCalculating: (v: boolean) => void;
+    clearResults: () => void;
+}
+
+export const useElectricalStore = create<ElectricalState>((set) => ({
+    resultsByNode: {},
+    trafoDados: null,
+    isCalculating: false,
+    lastCalculatedAt: null,
+
+    setResults: (lado1, lado2, trafo) => {
+        const map: Record<string, TrechoResult> = {};
+        [...lado1, ...lado2].forEach(r => { map[r.id] = r; });
+        set({
+            resultsByNode: map,
+            trafoDados: trafo,
+            lastCalculatedAt: new Date().toISOString(),
+        });
+    },
+
+    setIsCalculating: (v) => set({ isCalculating: v }),
+
+    clearResults: () => set({ resultsByNode: {}, trafoDados: null, lastCalculatedAt: null }),
+}));
