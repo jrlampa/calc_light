@@ -36,3 +36,29 @@ export async function calculateNetwork(payload: object) {
     const response = await api.post('/api/v1/calculate-network', payload);
     return response.data;
 }
+
+// ── Canvas Persistence (Fase 23) ────────────────────────────────────────────
+
+export interface CanvasPayload {
+    nodes: object[];
+    edges: object[];
+    viewport: { x: number; y: number; zoom: number };
+}
+
+export interface CanvasLoadResult extends CanvasPayload {
+    project_id: number;
+    has_canvas: boolean;
+    saved_at?: string | null;
+}
+
+/** Salva o estado completo do React Flow canvas (nós, arestas e viewport) no backend. */
+export async function saveCanvas(projectId: number, payload: CanvasPayload): Promise<CanvasLoadResult> {
+    const response = await api.put(`/projects/${projectId}/canvas`, payload);
+    return response.data;
+}
+
+/** Carrega o canvas salvo. Retorna has_canvas=false com listas vazias se nunca foi salvo. */
+export async function loadCanvas(projectId: number): Promise<CanvasLoadResult> {
+    const response = await api.get(`/projects/${projectId}/canvas`);
+    return response.data;
+}

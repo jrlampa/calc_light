@@ -42,6 +42,8 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
         "INSERT OR IGNORE INTO catalog_equipment (name, area_arrasto_m2) VALUES ('Cruzeta Metálica 2,4 m', 0.40)",
         "INSERT OR IGNORE INTO catalog_equipment (name, area_arrasto_m2) VALUES ('Chave Faca MT', 0.15)",
         "INSERT OR IGNORE INTO catalog_equipment (name, area_arrasto_m2) VALUES ('Chave a Óleo MT', 0.20)",
+        # Fase 23 — Persistência do Canvas (React Flow state)
+        "ALTER TABLE projects ADD COLUMN canvas_state TEXT DEFAULT NULL",
     ]
     for sql in migrations:
         try:
@@ -52,6 +54,7 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
 
 
 def get_db_connection():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)  # garante que a pasta existe
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     _apply_migrations(conn)

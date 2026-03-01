@@ -1,3 +1,5 @@
+import json
+import os
 import sqlite3
 
 from app.domain.models import CatalogEquipment, NodeSpanConfig, Pole, Project, ProjectNode
@@ -8,6 +10,7 @@ class ProjectRepository:
         self.db_path = db_path
 
     def _get_connection(self):
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
@@ -274,3 +277,41 @@ class ProjectRepository:
                 (node_id,),
             ).fetchone()
             return float(row["total"]) if row else 0.0
+
+    # --- Canvas Persistence (Fase 23) ---
+
+    def save_canvas_state(self, project_id: int, canvas: dict) -> bool:
+        """Serializa e persiste o estado completo do React Flow canvas no projeto.
+
+        Retorna True se o projeto foi encontrado e atualizado, False se não existe.
+        Limite de segurança: rejeita payloads > 10 MB para evitar DoS no SQLite.
+        """
+        import json
+        canvas_json = json.dumps(canvas, ensure_ascii=False)
+        if len(canvas_json.encode("utf-8")) > 10 * 1024 * 1024:
+            raise ValueError("Payload do canvas excede o limite de 10 MB.")
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE projects SET canvas_state = ?, updated_at = datetime('now') WHERE id = ?",
+                (canvas_json, project_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def get_canvas_state(self, project_id: int) -> dict | None:
+        """Retorna o canvas_state desserializado do projeto, ou None se nunca foi salvo."""
+        import json
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT canvas_state FROM projects WHERE id = ?",
+                (project_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return None  # projeto não existe
+            raw = row["canvas_state"]
+            if raw is None:
+                return {}  # projeto existe mas canvas nunca foi salvo
+            return json.loads(raw)

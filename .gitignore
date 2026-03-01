@@ -20,8 +20,9 @@ dist-ssr/
 .DS_Store
 Thumbs.db
 
-# Database
-cacl_light.db
+# Database — ignorar TODOS os ficheiros SQLite locais (Fase 23)
+*.db
+backend/database/
 
 # Test coverage artifacts
 .coverage
