@@ -51,6 +51,7 @@ class Project(ProjectBase):
     id: int | None = None
     created_at: str | None = None
     updated_at: str | None = None
+    enable_equipment_drag: bool = False
 
 class ProjectNodeBase(BaseModel):
     project_id: int
@@ -59,6 +60,7 @@ class ProjectNodeBase(BaseModel):
     pos_x: float = 0.0
     pos_y: float = 0.0
     effort_dan: float = 0.0
+    is_ghost: bool = False
 
 class ProjectNode(ProjectNodeBase):
     id: int | None = None
@@ -92,3 +94,11 @@ class TopologyNode(BaseModel):
 class ProjectTopology(BaseModel):
     nodes: list[TopologyNode]
     edges: list[TopologyEdge]
+
+
+# --- Catálogo de Equipamentos (Fase 19) ---
+
+class CatalogEquipment(BaseModel):
+    id: int | None = None
+    name: str
+    area_arrasto_m2: float

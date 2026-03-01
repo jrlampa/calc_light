@@ -4,12 +4,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Routers modulares (Arquitetura DDD - Fase 3+)
-from app.api.routers import calculations, catalogs, forces, projects, topology
+from app.api.routers import calculations, catalogs, forces, gis, projects, solver, topology
+
+APP_VERSION = "0.20.0"
 
 app = FastAPI(
     title="CACL LIGHT API",
     description="API para cálculo de esforço mecânico em postes de distribuição (padrão Light).",
-    version="0.3.0"
+    version=APP_VERSION,
 )
 
 # Origins permitidas: lidas de variável de ambiente em produção,
@@ -36,11 +38,13 @@ app.add_middleware(
 # Registro dos routers — nenhuma lógica de negócio aqui (Smart Backend, DDD)
 app.include_router(catalogs.router)
 app.include_router(projects.router)
+app.include_router(gis.router)
 app.include_router(calculations.router)
 app.include_router(topology.router)
 app.include_router(forces.router)
+app.include_router(solver.router)
 
 @app.get("/health", tags=["System"])
 def health_check():
     """Health check para CI/CD e Docker HEALTHCHECK."""
-    return {"status": "ok", "version": "0.3.0"}
+    return {"status": "ok", "version": APP_VERSION}

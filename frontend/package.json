@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.14.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,6 +22,7 @@
     "react-hook-form": "^7.71.2",
     "react-hotkeys-hook": "^5.2.4",
     "sonner": "^2.0.7",
+    "zundo": "^2.3.0",
     "zustand": "^5.0.11",
     "zx": "^8.8.5"
   },

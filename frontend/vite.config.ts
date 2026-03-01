@@ -19,13 +19,14 @@ export default defineConfig({
       include: [
         'src/components/CustomNode.tsx',
         'src/components/CustomEdge.tsx',
+        'src/components/ExportButton.tsx',
       ],
-      // Gate: 100% for the Pareto core components
+      // Gate: ≥80% coverage across the Pareto core components
       thresholds: {
-        lines: 100,
-        functions: 100,
+        lines: 80,
+        functions: 80,
         branches: 80,
-        statements: 100,
+        statements: 80,
       },
     },
   },

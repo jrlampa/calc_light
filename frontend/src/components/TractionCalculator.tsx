@@ -1,9 +1,18 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { Link2, MapPin, Package, Plus } from 'lucide-react';
 import { useUIStore } from '../store';
 import { useCatalogs } from '../hooks/useCatalogs';
-import { useProjectNodes, useSaveNode, useSaveSpan } from '../hooks/useProjects';
-import { Plus, Link2, MapPin } from 'lucide-react';
+import {
+    useNodeEquipment,
+    useProjectNodes,
+    useProjectSettings,
+    useSaveNode,
+    useSaveSpan,
+} from '../hooks/useProjects';
+import ProjectSettingsPanel from './ProjectSettingsPanel';
+import NodeEquipmentSelector from './NodeEquipmentSelector';
 
 // ── CLASSES DE ESTILO REUTILIZÁVEIS ──────────────────────────────────────
 const focusRing = 'outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all';
@@ -38,14 +47,19 @@ interface SpanFormData {
     angle_deg: number;
 }
 
-// ── COMPONENTE ───────────────────────────────────────────────────────────
+// ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────
 export default function TractionCalculator() {
     const { selectedProjectId } = useUIStore();
     const { poles, conductors } = useCatalogs();
+    const { data: settings } = useProjectSettings(selectedProjectId);
 
     const { data: nodes = [], isLoading: isLoadingNodes } = useProjectNodes(selectedProjectId);
     const saveNode = useSaveNode();
     const saveSpan = useSaveSpan();
+
+    // ID do nó selecionado para exibir equipamentos acoplados
+    const [selectedNodeIdForEquip, setSelectedNodeIdForEquip] = useState<number | null>(null);
+    const enableEquipDrag = settings?.enable_equipment_drag ?? false;
 
     const nodeForm = useForm<NodeFormData>({
         defaultValues: { label: '', pole_id: undefined, pos_x: 0, pos_y: 0 }
@@ -106,212 +120,249 @@ export default function TractionCalculator() {
     if (!selectedProjectId) return null;
 
     return (
-        <div className="flex flex-col gap-6 lg:flex-row">
-            {/* COLUMN 1: POSTES */}
-            <div className="flex-1 bg-white/60 backdrop-blur-md border border-white/60 shadow-lg shadow-slate-200/50 rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-6 border-b border-slate-200/50 pb-4">
-                    <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                        <MapPin size={20} />
-                    </div>
-                    <h2 className="text-lg font-semibold text-slate-800">Adicionar Poste Físico</h2>
-                </div>
+        <div className="flex flex-col gap-6">
+            {/* Configurações do Projeto (toggle de arrasto) */}
+            <ProjectSettingsPanel projectId={selectedProjectId} />
 
-                <form onSubmit={nodeForm.handleSubmit(onSubmitNode)} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-1">
-                            Identificação (Label)
-                        </label>
-                        <input
-                            {...nodeForm.register('label', { required: true })}
-                            className={inputCls}
-                            placeholder="Ex: Poste Central - P01"
-                            onFocus={onFocusSelect}
-                        />
+            <div className="flex flex-col gap-6 lg:flex-row">
+                {/* COLUMN 1: POSTES */}
+                <div className="flex-1 bg-white/60 backdrop-blur-md border border-white/60 shadow-lg shadow-slate-200/50 rounded-2xl p-6">
+                    <div className="flex items-center gap-2 mb-6 border-b border-slate-200/50 pb-4">
+                        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                            <MapPin size={20} />
+                        </div>
+                        <h2 className="text-lg font-semibold text-slate-800">Adicionar Poste Físico</h2>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-1">
-                            Tipo de Poste (Catálogo Light)
-                        </label>
-                        <select
-                            {...nodeForm.register('pole_id', { required: true })}
-                            className={selectCls}
-                        >
-                            <option value="">Selecione o Poste</option>
-                            {poles.map(p => (
-                                <option key={p.id} value={p.id}>
-                                    {p.type_name} ({p.height_m}m / {p.resistance_dan}daN)
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                    <form onSubmit={nodeForm.handleSubmit(onSubmitNode)} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-600 mb-1">Posição X</label>
+                            <label className="block text-sm font-medium text-slate-600 mb-1">
+                                Identificação (Label)
+                            </label>
                             <input
-                                type="number"
-                                step="0.1"
-                                {...nodeForm.register('pos_x')}
+                                {...nodeForm.register('label', { required: true })}
                                 className={inputCls}
+                                placeholder="Ex: Poste Central - P01"
                                 onFocus={onFocusSelect}
                             />
                         </div>
+
                         <div>
-                            <label className="block text-sm font-medium text-slate-600 mb-1">Posição Y</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                {...nodeForm.register('pos_y')}
-                                className={inputCls}
-                                onFocus={onFocusSelect}
-                            />
+                            <label className="block text-sm font-medium text-slate-600 mb-1">
+                                Tipo de Poste (Catálogo Light)
+                            </label>
+                            <select
+                                {...nodeForm.register('pole_id', { required: true })}
+                                className={selectCls}
+                            >
+                                <option value="">Selecione o Poste</option>
+                                {poles.map(p => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.type_name} ({p.height_m}m / {p.resistance_dan}daN)
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                    </div>
 
-                    <button
-                        type="submit"
-                        disabled={saveNode.isPending}
-                        className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg shadow-md shadow-blue-500/30 transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-                    >
-                        {saveNode.isPending ? 'Salvando...' : <><Plus size={18} /> Cadastrar Poste</>}
-                    </button>
-                </form>
-
-                {/* Listed Nodes summary */}
-                <div className="mt-8 pt-6 border-t border-slate-200/50">
-                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                        Postes Cadastrados no Projeto ({nodes.length})
-                    </h3>
-                    <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
-                        {nodes.map(n => (
-                            <div key={n.id} className="flex justify-between items-center text-sm p-2 rounded-md bg-white/40 border border-white">
-                                <span className="font-medium text-slate-700">{n.label}</span>
-                                <span className="text-xs text-slate-500">Pole ID: {n.pole_id}</span>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600 mb-1">Posição X</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    {...nodeForm.register('pos_x')}
+                                    className={inputCls}
+                                    onFocus={onFocusSelect}
+                                />
                             </div>
-                        ))}
-                        {nodes.length === 0 && !isLoadingNodes && (
-                            <p className="text-xs text-slate-400">Nenhum poste cadastrado.</p>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600 mb-1">Posição Y</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    {...nodeForm.register('pos_y')}
+                                    className={inputCls}
+                                    onFocus={onFocusSelect}
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={saveNode.isPending}
+                            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg shadow-md shadow-blue-500/30 transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                        >
+                            {saveNode.isPending ? 'Salvando...' : <><Plus size={18} /> Cadastrar Poste</>}
+                        </button>
+                    </form>
+
+                    {/* Listed Nodes summary + equipment selector */}
+                    <div className="mt-8 pt-6 border-t border-slate-200/50">
+                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                            Postes Cadastrados no Projeto ({nodes.length})
+                        </h3>
+                        <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                            {nodes.map(n => (
+                                <div
+                                    key={n.id}
+                                    className={`flex justify-between items-center text-sm p-2 rounded-md border cursor-pointer transition-colors ${
+                                        enableEquipDrag && selectedNodeIdForEquip === n.id
+                                            ? 'bg-amber-50 border-amber-200'
+                                            : 'bg-white/40 border-white hover:bg-white/60'
+                                    }`}
+                                    onClick={() => {
+                                        if (!enableEquipDrag) return;
+                                        setSelectedNodeIdForEquip(prev => prev === n.id ? null : n.id);
+                                    }}
+                                    title={enableEquipDrag ? 'Clique para gerenciar equipamentos acoplados' : undefined}
+                                >
+                                    <span className="font-medium text-slate-700">{n.label}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-slate-500">Pole ID: {n.pole_id}</span>
+                                        {enableEquipDrag && (
+                                            <Package size={12} className="text-amber-500" />
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            {nodes.length === 0 && !isLoadingNodes && (
+                                <p className="text-xs text-slate-400">Nenhum poste cadastrado.</p>
+                            )}
+                        </div>
+
+                        {/* Equipment selector — aparece ao clicar num nó com modo avançado ativo */}
+                        {enableEquipDrag && selectedNodeIdForEquip && (
+                            <NodeEquipmentSelector
+                                projectId={selectedProjectId}
+                                nodeId={selectedNodeIdForEquip}
+                            />
+                        )}
+                        {enableEquipDrag && !selectedNodeIdForEquip && nodes.length > 0 && (
+                            <p className="mt-3 text-[11px] text-amber-600 flex items-center gap-1">
+                                <Package size={11} />
+                                Clique num poste para gerenciar equipamentos acoplados.
+                            </p>
                         )}
                     </div>
                 </div>
-            </div>
 
-            {/* COLUMN 2: VÃOS (SPANS) */}
-            <div className="flex-1 bg-white/60 backdrop-blur-md border border-white/60 shadow-lg shadow-slate-200/50 rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-6 border-b border-slate-200/50 pb-4">
-                    <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-                        <Link2 size={20} />
+                {/* COLUMN 2: VÃOS (SPANS) */}
+                <div className="flex-1 bg-white/60 backdrop-blur-md border border-white/60 shadow-lg shadow-slate-200/50 rounded-2xl p-6">
+                    <div className="flex items-center gap-2 mb-6 border-b border-slate-200/50 pb-4">
+                        <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                            <Link2 size={20} />
+                        </div>
+                        <h2 className="text-lg font-semibold text-slate-800">Conectar Postes (Criar Vão)</h2>
                     </div>
-                    <h2 className="text-lg font-semibold text-slate-800">Conectar Postes (Criar Vão)</h2>
+
+                    <form onSubmit={spanForm.handleSubmit(onSubmitSpan)} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600 mb-1">Poste Origem</label>
+                                <select
+                                    {...spanForm.register('source_node_id', { required: true })}
+                                    className={selectCls}
+                                >
+                                    <option value="">-- Selecione --</option>
+                                    {nodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600 mb-1">Poste Destino</label>
+                                <select
+                                    {...spanForm.register('target_node_id', { required: true })}
+                                    className={selectCls}
+                                >
+                                    <option value="">-- Selecione --</option>
+                                    {nodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-white/40 border border-white mt-4 space-y-4">
+                            <h3 className="text-sm font-semibold text-slate-700">Cabeamento Média Tensão (MT)</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-500 mb-1">Condutor</label>
+                                    <select {...spanForm.register('mt_conductor_id')} className={selectSmCls}>
+                                        <option value="">Sem Condutor MT</option>
+                                        {conductors.filter(c => c.name.includes('MT')).map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-500 mb-1">Flecha (m)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        {...spanForm.register('mt_sag_m')}
+                                        className={inputSmCls}
+                                        onFocus={onFocusSelect}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-white/40 border border-white space-y-4">
+                            <h3 className="text-sm font-semibold text-slate-700">Cabeamento Baixa Tensão (BT)</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-500 mb-1">Condutor</label>
+                                    <select {...spanForm.register('bt_conductor_id')} className={selectSmCls}>
+                                        <option value="">Sem Condutor BT</option>
+                                        {conductors.filter(c => c.name.includes('BT')).map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-500 mb-1">Flecha (m)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        {...spanForm.register('bt_sag_m')}
+                                        className={inputSmCls}
+                                        onFocus={onFocusSelect}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-2">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600 mb-1">Distância do Vão (m)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    {...spanForm.register('span_length_m', { required: true })}
+                                    className={inputCls}
+                                    onFocus={onFocusSelect}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600 mb-1">Ângulo Deflexão (°)</label>
+                                <input
+                                    type="number"
+                                    step="1"
+                                    {...spanForm.register('angle_deg', { required: true })}
+                                    className={inputCls}
+                                    onFocus={onFocusSelect}
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={saveSpan.isPending}
+                            className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg shadow-md shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                        >
+                            {saveSpan.isPending ? 'Salvando...' : <><Link2 size={18} /> Estabelecer Conexão (Vão)</>}
+                        </button>
+                    </form>
                 </div>
-
-                <form onSubmit={spanForm.handleSubmit(onSubmitSpan)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-600 mb-1">Poste Origem</label>
-                            <select
-                                {...spanForm.register('source_node_id', { required: true })}
-                                className={selectCls}
-                            >
-                                <option value="">-- Selecione --</option>
-                                {nodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-600 mb-1">Poste Destino</label>
-                            <select
-                                {...spanForm.register('target_node_id', { required: true })}
-                                className={selectCls}
-                            >
-                                <option value="">-- Selecione --</option>
-                                {nodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-white/40 border border-white mt-4 space-y-4">
-                        <h3 className="text-sm font-semibold text-slate-700">Cabeamento Média Tensão (MT)</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Condutor</label>
-                                <select {...spanForm.register('mt_conductor_id')} className={selectSmCls}>
-                                    <option value="">Sem Condutor MT</option>
-                                    {conductors.filter(c => c.name.includes('MT')).map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Flecha (m)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    {...spanForm.register('mt_sag_m')}
-                                    className={inputSmCls}
-                                    onFocus={onFocusSelect}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-white/40 border border-white space-y-4">
-                        <h3 className="text-sm font-semibold text-slate-700">Cabeamento Baixa Tensão (BT)</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Condutor</label>
-                                <select {...spanForm.register('bt_conductor_id')} className={selectSmCls}>
-                                    <option value="">Sem Condutor BT</option>
-                                    {conductors.filter(c => c.name.includes('BT')).map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Flecha (m)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    {...spanForm.register('bt_sag_m')}
-                                    className={inputSmCls}
-                                    onFocus={onFocusSelect}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-600 mb-1">Distância do Vão (m)</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                {...spanForm.register('span_length_m', { required: true })}
-                                className={inputCls}
-                                onFocus={onFocusSelect}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-600 mb-1">Ângulo Deflexão (°)</label>
-                            <input
-                                type="number"
-                                step="1"
-                                {...spanForm.register('angle_deg', { required: true })}
-                                className={inputCls}
-                                onFocus={onFocusSelect}
-                            />
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={saveSpan.isPending}
-                        className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg shadow-md shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-                    >
-                        {saveSpan.isPending ? 'Salvando...' : <><Link2 size={18} /> Estabelecer Conexão (Vão)</>}
-                    </button>
-                </form>
             </div>
         </div>
     );
 }
+

@@ -15,3 +15,18 @@ api.interceptors.response.use(
     (response) => response,
     (error) => Promise.reject(error)
 );
+
+/** Inicia o download do ZIP de exportação Excel para o projeto informado. */
+export async function downloadProjectExcel(projectId: number): Promise<void> {
+    const response = await api.get(`/projects/${projectId}/export/excel`, {
+        responseType: 'blob',
+    });
+    const url = URL.createObjectURL(new Blob([response.data], { type: 'application/zip' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `projeto_${projectId}_export.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+}

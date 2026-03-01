@@ -22,13 +22,23 @@ def build_topology_diagram(
     nodes: list[ProjectNode],
     spans: list[NodeSpanConfig],
     conductors: dict[int, Conductor],
-    poles: dict[int, Pole]
+    poles: dict[int, Pole],
+    enable_equipment_drag: bool = False,
+    node_equipment_areas: dict[int, float] | None = None,
 ) -> ProjectTopology:
     """
     Constrói a malha topológica do projeto para o React Flow (Aba 3) e calcula o esforço
     mecânico resultante em cada nó usando a regra de braço de alavanca.
     Inclui utilization_percent, is_overloaded e nominal_capacity no payload do nó.
+
+    Args:
+        enable_equipment_drag: Se True, soma a área de arrasto dos equipamentos acoplados
+            ao vento do poste (Modo Avançado — Fase 19). Default: False (padrão Enel).
+        node_equipment_areas: Dicionário {node_id: total_area_m2} com a área de arrasto
+            acumulada de todos os equipamentos acoplados a cada nó. Ignorado quando
+            enable_equipment_drag=False.
     """
+    _eq_areas = node_equipment_areas or {}
     topology_nodes = []
 
     node_configs_map: dict[int, list[CalculationInput]] = {n.id: [] for n in nodes}
@@ -105,18 +115,36 @@ def build_topology_diagram(
         inputs = node_configs_map.get(node.id, [])
         conds = node_conductors_map.get(node.id, [])
 
+        # Nó Fantasma: não calcula esforço nem capacidade — exerce apenas tração nos vizinhos reais
+        if node.is_ghost:
+            topology_nodes.append(TopologyNode(
+                id=str(node.id),
+                position={"x": node.pos_x, "y": node.pos_y},
+                data={
+                    "label": node.label,
+                    "effort_dan": 0.0,
+                    "utilization_percent": 0.0,
+                    "is_overloaded": False,
+                    "nominal_capacity": 0.0,
+                    "is_ghost": True,
+                }
+            ))
+            continue
+
         total_effort = 0.0
         if inputs and conds:
+            extra_area = _eq_areas.get(node.id, 0.0) if enable_equipment_drag else 0.0
+
             mt_in = [i for i in inputs if i.level == 'MT1']
             mt_co = [c for i, c in zip(inputs, conds, strict=False) if i.level == 'MT1']
             if mt_in:
-                res_mt = calculate_level_resultant(mt_in, mt_co)
+                res_mt = calculate_level_resultant(mt_in, mt_co, extra_drag_area_m2=extra_area)
                 total_effort += res_mt.traction_on_pole_dan
 
             bt_in = [i for i in inputs if i.level == 'BT']
             bt_co = [c for i, c in zip(inputs, conds, strict=False) if i.level == 'BT']
             if bt_in:
-                res_bt = calculate_level_resultant(bt_in, bt_co)
+                res_bt = calculate_level_resultant(bt_in, bt_co, extra_drag_area_m2=extra_area)
                 total_effort += res_bt.traction_on_pole_dan
 
         node.effort_dan = round(total_effort, 2)
@@ -136,6 +164,8 @@ def build_topology_diagram(
                 "utilization_percent": utilization_percent,
                 "is_overloaded": is_overloaded,
                 "nominal_capacity": nominal_capacity,
+                "is_ghost": False,
+                "equipment_drag_area_m2": _eq_areas.get(node.id, 0.0) if enable_equipment_drag else 0.0,
             }
         ))
 

@@ -1,17 +1,46 @@
+# Version control
 .git
 .gitignore
 .dockerignore
-node_modules/
-dist/
+
+# Python artifacts
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
 .venv/
 venv/
 env/
 .env
 .pytest_cache/
+.coverage
+htmlcov/
+*.db
+
+# Node / Frontend artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+
+# IDE / OS
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Docs / Planning
 README.md
 MEMORY.md
+
+# Excel templates are copied explicitly if needed
 *xlsm*
+
+# Test files (not needed in runtime image)
+backend/app/tests/
+backend/app/scripts/
