@@ -1,0 +1,68 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CACL LIGHT — Docker Compose para Produção Local (Uso Diário)
+# Fase 21 — One-Click Local Production
+#
+# USO:
+#   Windows : iniciar.bat
+#   Linux   : ./iniciar.sh
+#
+# PERSISTÊNCIA DE DADOS:
+#   Banco de dados → ./local_data/db/cacl_light.db
+#   Template Excel → ./local_data/templates/modelo.xlsm
+#
+# Se o Docker for resetado, reiniciado ou a imagem reconstruída,
+# os dados permanecem intactos nessas pastas locais.
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Banco de dados SQLite — pasta visível na máquina host
+      - ./local_data/db:/database
+      # Template Excel (.xlsm) — permite atualizar o modelo sem rebuild
+      - ./local_data/templates:/app/app/templates
+    environment:
+      - DATABASE_URL=sqlite:////database/cacl_light.db
+    networks:
+      - cacl_local
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cacl_local
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  cacl_local:
+    driver: bridge

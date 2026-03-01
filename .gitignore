@@ -33,3 +33,11 @@ backend/.coverage
 frontend/coverage/
 backend/__pycache__
 backend/app/**/__pycache__
+
+# Fase 21 — Dados de produção local (não versionar)
+local_data/db/*.db
+local_data/templates/*.xlsm
+local_data/templates/*.xlsx
+
+# Backups locais (não versionar o conteúdo, apenas a pasta)
+backups/*.db

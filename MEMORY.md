@@ -4,7 +4,7 @@
 
 O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado para substituir planilhas complexas de engenharia elétrica. O objetivo é realizar o cálculo de esforços mecânicos em postes de distribuição de energia, garantindo precisão idêntica à planilha original.
 
-**Versão atual:** `0.20.0` (Fase 20 — Auditoria Final, Refatoração Pré-Deploy e Consolidação)
+**Versão atual:** `0.21.0` (Fase 21 — Infraestrutura de Uso Diário Local / Local Production)
 
 ## Regras e Arquitetura (Não Negociáveis)
 
@@ -242,3 +242,135 @@ Para cada nó REAL (is_ghost=False):
 - **DevOps/QA:** Garantia de testes, dockerização e cobertura de código.
 - **UI/UX Designer:** Reproduzir a interface da planilha no modelo 2.5D.
 - **Estagiário (Criatividade):** Soluções fora da caixa para problemas não mapeados.
+
+---
+
+## Fase 21 — Manual de Operação Local (Local Production)
+
+**Versão:** `0.21.0` | **Papel:** Engenheiro DevOps / SRE
+
+Esta fase configura o ambiente de **uso diário local** do CACL LIGHT. O objetivo é que o
+sistema seja iniciado com um único clique, com persistência blindada do banco de dados
+e rotinas automáticas de backup para proteger os projetos reais criados pelo engenheiro.
+
+### Estrutura de Arquivos de Operação
+
+```
+calc_light/
+├── docker-compose.local.yml   ← Compose para produção local (bind-mounts + log limits)
+├── iniciar.sh / iniciar.bat   ← One-click: sobe containers + abre o navegador
+├── parar.sh  / parar.bat      ← Parada graciosa dos containers
+├── backup_db.sh / backup_db.bat ← Backup do SQLite com timestamp
+├── local_data/
+│   ├── db/
+│   │   └── cacl_light.db      ← Banco de dados SQLite (persistido no host)
+│   └── templates/
+│       └── modelo.xlsm        ← Template Excel (persistido no host)
+└── backups/
+    └── cacl_backup_YYYY-MM-DD_HH-MM.db  ← Backups automáticos com timestamp
+```
+
+### Como Iniciar o Sistema (One-Click Start)
+
+**Linux / macOS:**
+```bash
+# Na primeira vez, tornar o script executável:
+chmod +x iniciar.sh parar.sh backup_db.sh
+
+# Iniciar:
+./iniciar.sh
+```
+
+**Windows:**
+```
+Duplo-clique em: iniciar.bat
+```
+
+O script automaticamente:
+1. Cria as pastas `local_data/db/`, `local_data/templates/` e `backups/` se não existirem
+2. Copia `backend/app/templates/modelo.xlsm` → `local_data/templates/` (apenas na 1ª vez)
+3. Executa `docker compose -f docker-compose.local.yml up -d --build`
+4. Aguarda 15 segundos para o sistema inicializar
+5. Abre automaticamente `http://localhost` no navegador padrão
+
+### Como Parar o Sistema
+
+**Linux / macOS:**
+```bash
+./parar.sh
+```
+
+**Windows:**
+```
+Duplo-clique em: parar.bat
+```
+
+> Os dados em `./local_data/` são **preservados** — apenas os containers são removidos.
+
+### Como Fazer Backup do Banco de Dados
+
+**Linux / macOS:**
+```bash
+./backup_db.sh
+```
+
+**Windows:**
+```
+Duplo-clique em: backup_db.bat
+```
+
+O backup cria uma cópia do SQLite em `./backups/cacl_backup_YYYY-MM-DD_HH-MM.db`.
+O script Linux mantém automaticamente os **30 backups mais recentes** (remove os mais antigos).
+
+### Como Restaurar um Backup (Disaster Recovery)
+
+1. **Parar o sistema:**
+   ```bash
+   ./parar.sh        # Linux
+   # ou duplo-clique em parar.bat  (Windows)
+   ```
+
+2. **Substituir o banco de dados pelo backup desejado:**
+   ```bash
+   # Linux / macOS:
+   cp backups/cacl_backup_2026-03-01_14-30.db local_data/db/cacl_light.db
+
+   # Windows (Prompt de Comando):
+   copy backups\cacl_backup_2026-03-01_14-30.db local_data\db\cacl_light.db
+   ```
+
+3. **Reiniciar o sistema:**
+   ```bash
+   ./iniciar.sh      # Linux
+   # ou duplo-clique em iniciar.bat  (Windows)
+   ```
+
+### Persistência de Dados (Regra de Ouro)
+
+| Dado | Caminho no Host | Caminho no Container |
+|---|---|---|
+| Banco SQLite | `./local_data/db/cacl_light.db` | `/database/cacl_light.db` |
+| Template Excel | `./local_data/templates/modelo.xlsm` | `/app/app/templates/modelo.xlsm` |
+
+O `docker-compose.local.yml` usa **bind-mounts** (não named volumes) para garantir que
+os arquivos sejam visíveis e editáveis diretamente no sistema operacional.
+
+### Limites de Log (Proteção de HD)
+
+Configurado no `docker-compose.local.yml` para evitar consumo excessivo ao longo dos meses:
+```yaml
+logging:
+  driver: "json-file"
+  options:
+    max-size: "10m"   # Máximo 10 MB por arquivo de log
+    max-file: "3"     # Máximo 3 arquivos rotativos = 30 MB total por container
+```
+
+### Acesso à Interface
+
+| Serviço | URL |
+|---|---|
+| Aplicação Web (CACL LIGHT) | http://localhost |
+| API Backend (FastAPI docs) | http://localhost:8000/docs |
+| Health Check | http://localhost:8000/health |
+
