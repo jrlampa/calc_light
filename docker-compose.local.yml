@@ -1,6 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CACL LIGHT — Docker Compose para Produção Local (Uso Diário)
-# Fase 21 — One-Click Local Production
+# Fase 21 — One-Click Local Production + Chrome App Mode + SQLite Viewer
 #
 # USO:
 #   Windows : iniciar.bat
@@ -12,6 +12,11 @@
 #
 # Se o Docker for resetado, reiniciado ou a imagem reconstruída,
 # os dados permanecem intactos nessas pastas locais.
+#
+# PORTAS:
+#   http://localhost      → Aplicação CACL LIGHT (frontend Nginx)
+#   http://localhost:8000 → API FastAPI (docs em /docs)
+#   http://localhost:8080 → Visualizador SQLite (sqlite-web, read-only)
 # ─────────────────────────────────────────────────────────────────────────────
 
 version: '3.9'
@@ -62,6 +67,25 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # Visualizador SQLite ultraleve — inspecione o banco sem instalar nada extra
+  # Acesso: http://localhost:8080
+  sqlite-web:
+    image: coleifer/sqlite-web:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mesma pasta do banco — montada em read-only para segurança
+      - ./local_data/db:/data:ro
+    command: ["-H", "0.0.0.0", "-r", "/data/cacl_light.db"]
+    networks:
+      - cacl_local
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
 networks:
   cacl_local:

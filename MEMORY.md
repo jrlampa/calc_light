@@ -247,35 +247,36 @@ Para cada nó REAL (is_ghost=False):
 
 ## Fase 21 — Manual de Operação Local (Local Production)
 
-**Versão:** `0.21.0` | **Papel:** Engenheiro DevOps / SRE
+**Versão:** `0.21.0` | **Papel:** Engenheiro DevOps / SRE / DevEx
 
-Esta fase configura o ambiente de **uso diário local** do CACL LIGHT. O objetivo é que o
-sistema seja iniciado com um único clique, com persistência blindada do banco de dados
-e rotinas automáticas de backup para proteger os projetos reais criados pelo engenheiro.
+Esta fase configura o ambiente de **uso diário local** do CACL LIGHT com infraestrutura
+de 1 clique, Chrome App Mode (interface de aplicativo nativo), persistência blindada do
+banco de dados, backup automático e workflow de atualização para o desenvolvedor ativo.
 
 ### Estrutura de Arquivos de Operação
 
 ```
 calc_light/
-├── docker-compose.local.yml   ← Compose para produção local (bind-mounts + log limits)
-├── iniciar.sh / iniciar.bat   ← One-click: sobe containers + abre o navegador
-├── parar.sh  / parar.bat      ← Parada graciosa dos containers
-├── backup_db.sh / backup_db.bat ← Backup do SQLite com timestamp
+├── docker-compose.local.yml     ← Compose para produção local (bind-mounts + log limits + sqlite-web)
+├── iniciar.sh / iniciar.bat     ← One-click: sobe containers, healthcheck loop, abre Chrome App
+├── parar.sh  / parar.bat        ← Backup automático + parada graciosa
+├── atualizar.sh / atualizar.bat ← git pull + rebuild + restart (preservando dados)
+├── backup_db.sh / backup_db.bat ← Backup manual com timestamp
 ├── local_data/
 │   ├── db/
-│   │   └── cacl_light.db      ← Banco de dados SQLite (persistido no host)
+│   │   └── cacl_light.db        ← Banco SQLite (persistido no host, nunca no container)
 │   └── templates/
-│       └── modelo.xlsm        ← Template Excel (persistido no host)
+│       └── modelo.xlsm          ← Template Excel (persistido no host)
 └── backups/
-    └── cacl_backup_YYYY-MM-DD_HH-MM.db  ← Backups automáticos com timestamp
+    └── cacl_backup_YYYY-MM-DD_HH-MM-SS.db  ← Backups automáticos com timestamp
 ```
 
 ### Como Iniciar o Sistema (One-Click Start)
 
 **Linux / macOS:**
 ```bash
-# Na primeira vez, tornar o script executável:
-chmod +x iniciar.sh parar.sh backup_db.sh
+# Na primeira vez, tornar os scripts executáveis:
+chmod +x iniciar.sh parar.sh atualizar.sh backup_db.sh
 
 # Iniciar:
 ./iniciar.sh
@@ -290,10 +291,11 @@ O script automaticamente:
 1. Cria as pastas `local_data/db/`, `local_data/templates/` e `backups/` se não existirem
 2. Copia `backend/app/templates/modelo.xlsm` → `local_data/templates/` (apenas na 1ª vez)
 3. Executa `docker compose -f docker-compose.local.yml up -d --build`
-4. Aguarda 15 segundos para o sistema inicializar
-5. Abre automaticamente `http://localhost` no navegador padrão
+4. **Aguarda o sistema responder HTTP 200** (healthcheck loop — máx 90s, testa a cada 3s)
+5. **Abre o Chrome em modo App** (`--app=http://localhost`) — janela dedicada sem barra de navegação
+   - Fallback automático para o navegador padrão se Chrome não estiver instalado
 
-### Como Parar o Sistema
+### Como Parar o Sistema (com Backup Automático)
 
 **Linux / macOS:**
 ```bash
@@ -305,9 +307,31 @@ O script automaticamente:
 Duplo-clique em: parar.bat
 ```
 
-> Os dados em `./local_data/` são **preservados** — apenas os containers são removidos.
+`parar` realiza automaticamente um backup com timestamp **antes** de derrubar os containers,
+protegendo contra corrupção acidental na parada do sistema.
 
-### Como Fazer Backup do Banco de Dados
+### Como Atualizar o Sistema (Developer Workflow)
+
+Quando houver novos commits no repositório:
+
+**Linux / macOS:**
+```bash
+./atualizar.sh
+```
+
+**Windows:**
+```
+Duplo-clique em: atualizar.bat
+```
+
+O script `atualizar` realiza:
+1. **Backup pré-atualização** — salvo com sufixo `_pre-update_` em `./backups/`
+2. **`git pull`** — baixa as últimas alterações
+3. **`docker compose build`** — reconstrói as imagens com o novo código
+4. **`docker compose up -d`** — reinicia os serviços (volumes de dados preservados)
+5. **Healthcheck loop** — aguarda o sistema responder antes de finalizar
+
+### Como Fazer Backup Manual
 
 **Linux / macOS:**
 ```bash
@@ -319,31 +343,44 @@ Duplo-clique em: parar.bat
 Duplo-clique em: backup_db.bat
 ```
 
-O backup cria uma cópia do SQLite em `./backups/cacl_backup_YYYY-MM-DD_HH-MM.db`.
-O script Linux mantém automaticamente os **30 backups mais recentes** (remove os mais antigos).
+Cria `./backups/cacl_backup_YYYY-MM-DD_HH-MM-SS.db`. O script Linux auto-purga mantendo
+os **30 backups mais recentes**.
 
 ### Como Restaurar um Backup (Disaster Recovery)
 
 1. **Parar o sistema:**
    ```bash
-   ./parar.sh        # Linux
-   # ou duplo-clique em parar.bat  (Windows)
+   ./parar.sh        # Linux / macOS
+   # parar.bat       # Windows
    ```
 
-2. **Substituir o banco de dados pelo backup desejado:**
+2. **Substituir o banco pelo backup desejado:**
    ```bash
    # Linux / macOS:
-   cp backups/cacl_backup_2026-03-01_14-30.db local_data/db/cacl_light.db
+   cp backups/cacl_backup_2026-03-01_14-30-05.db local_data/db/cacl_light.db
 
    # Windows (Prompt de Comando):
-   copy backups\cacl_backup_2026-03-01_14-30.db local_data\db\cacl_light.db
+   copy backups\cacl_backup_2026-03-01_14-30-05.db local_data\db\cacl_light.db
    ```
 
-3. **Reiniciar o sistema:**
+3. **Reiniciar:**
    ```bash
-   ./iniciar.sh      # Linux
-   # ou duplo-clique em iniciar.bat  (Windows)
+   ./iniciar.sh      # Linux / macOS
+   # iniciar.bat     # Windows
    ```
+
+### Visualizador SQLite (sqlite-web) — Inspeção do Banco
+
+O `docker-compose.local.yml` inclui o serviço `sqlite-web` (imagem `coleifer/sqlite-web`),
+que permite **inspecionar o banco de dados diretamente no navegador** sem instalar nenhum
+software extra.
+
+| Ação | URL |
+|---|---|
+| Visualizar tabelas e dados | **http://localhost:8080** |
+
+- O banco é montado em **modo leitura** (`:ro`) — sem risco de alteração acidental
+- Logs limitados a `5m / 2 arquivos` para não lotar o HD
 
 ### Persistência de Dados (Regra de Ouro)
 
@@ -357,20 +394,22 @@ os arquivos sejam visíveis e editáveis diretamente no sistema operacional.
 
 ### Limites de Log (Proteção de HD)
 
-Configurado no `docker-compose.local.yml` para evitar consumo excessivo ao longo dos meses:
 ```yaml
 logging:
   driver: "json-file"
   options:
     max-size: "10m"   # Máximo 10 MB por arquivo de log
     max-file: "3"     # Máximo 3 arquivos rotativos = 30 MB total por container
+# sqlite-web: max-size 5m / max-file 2
 ```
 
 ### Acesso à Interface
 
-| Serviço | URL |
-|---|---|
-| Aplicação Web (CACL LIGHT) | http://localhost |
-| API Backend (FastAPI docs) | http://localhost:8000/docs |
-| Health Check | http://localhost:8000/health |
+| Serviço | URL | Descrição |
+|---|---|---|
+| Aplicação CACL LIGHT | http://localhost | Frontend React via Nginx |
+| API Backend | http://localhost:8000/docs | FastAPI Swagger docs |
+| Health Check | http://localhost:8000/health | Status do backend |
+| Visualizador SQLite | http://localhost:8080 | sqlite-web (read-only) |
+
 
