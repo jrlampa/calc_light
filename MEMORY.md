@@ -4,7 +4,7 @@
 
 O projeto **CACL_LIGHT** é um sistema web (React + FastAPI + SQLite3) projetado para substituir planilhas complexas de engenharia elétrica. O objetivo é realizar o cálculo de esforços mecânicos em postes de distribuição de energia, garantindo precisão idêntica à planilha original.
 
-**Versão atual:** `0.21.0` (Fase 21 — Infraestrutura de Uso Diário Local / Local Production)
+**Versão atual:** `0.24.0` (Fase 24 — Memorial de Cálculo em PDF / PDF Report Generation)
 
 ## Regras e Arquitetura (Não Negociáveis)
 
@@ -517,3 +517,95 @@ logging:
   "dv_branch_pct": 1.5
 }
 ```
+
+---
+
+## Fase 24 — Memorial de Cálculo em PDF
+
+**Versão:** `0.24.0` | **Branch:** `feature/phase24-pdf-report`
+
+### Objetivo
+
+Gerar o **Memorial de Cálculo Técnico** em PDF para entrega formal à concessionária Light/Enel.
+O PDF consolida todos os resultados elétricos calculados pelo Motor CQT V8 (Fase 22) em
+um documento profissional com cabeçalho, tabelas coloridas e notas normativas.
+
+### Endpoint
+
+```
+GET /api/v1/projects/{project_id}/report
+→ 200 application/pdf  (attachment; filename="memorial_cqt_projeto_{id}_{nome}.pdf")
+→ 404  Projeto não encontrado
+→ 422  Canvas vazio, sem nós, ou ausência de nó transformador / topologia inválida
+→ 500  Erro interno no motor elétrico ou na geração do PDF
+```
+
+### Pré-requisitos (Canvas)
+
+O canvas React Flow **deve estar salvo** (via `PUT /projects/{id}/canvas`, Fase 23) **antes** de
+solicitar o relatório. O backend lê `project.canvas_state` (JSON) e nunca depende de estado vivo do frontend.
+
+O canvas deve conter:
+1. Pelo menos um nó `is_transformer=True` (raiz da topologia)
+2. Pelo menos um nó de poste (não fantasma)
+3. Arestas conectando a rede (sem anéis — DAG acíclico)
+
+### Fluxo Interno (Smart Backend — DDD)
+
+```
+DB.canvas_state (React Flow JSON)
+  ↓ _canvas_nodes_to_graph()    [filtra is_ghost=True; converte data → GraphNodeSchema]
+  ↓ _canvas_edges_to_graph()    [suporta formato CQT e mechanical; fallbacks de campo]
+  ↓ _build_graph_payload()      [parâmetros elétricos; defaults: u_nominal=127 V, trafo=112.5 kVA]
+  ↓ TopologyParser               [valida DAG + bifurca Lado1 / Lado2]
+  ↓ LightElectricalService       [Motor CQT V8: ΔV%, Icc, T°, trafo_loading]
+  ↓ generate_memorial_pdf()     [ReportLab Platypus — bytes PDF]
+  ↓ StreamingResponse            [application/pdf, Content-Disposition: attachment]
+```
+
+### Mapeamento de Campos do Canvas → Grafo
+
+| Campo Grafo | Prioridade de Leitura | Fallback |
+|---|---|---|
+| `condutor` | `data.condutor` → `data.bt_conductor` → `data.mt_conductor` | `"MULTIPLEX 3X35+25"` |
+| `comprimento` | `data.comprimento` → `data.span_length_m` | `50.0 m` |
+| `fases` | `data.fases` | `3` (trifásico BT Light) |
+| `tipo_trecho` | `data.tipo_trecho` | `"rede"` |
+
+### Conteúdo do PDF (ReportLab Platypus)
+
+1. **Cabeçalho:** Nome do projeto, data de criação, trafo nominal kVA, norma NTC 905200/905100
+2. **Resumo do Transformador:** carga atual, carga projetada +15%, carregamento %, status
+3. **Tabela Lado 1:** Nó, carga trecho/acumulado, ΔV% trecho/acumulado, V final, Icc (kA), T° (°C), status térmico e de tensão
+4. **Tabela Lado 2:** Mesmos campos (pode estar vazia se rede linear)
+5. **Notas Técnicas:** Referências NTC 905200/905100, limites de ΔV% (8%), temperatura PVC/XLPE, método Thévenin
+
+### Codificação de Cores
+
+| Coluna | Ok | Reprovado / Atenção |
+|---|---|---|
+| Térmico | Verde (`#C6F6D5`) | Vermelho (`#FED7D7`) |
+| Tensão | Verde (`#C6F6D5`) | Âmbar (`#FEEBC8`) |
+| ΔV% Acum. > 8% | — | Texto vermelho negrito |
+
+### Dependência
+
+```
+reportlab>=4.1.0   # PDF puro Python, sem dependências de sistema
+```
+
+### Arquivos
+
+| Arquivo | Papel |
+|---|---|
+| `backend/app/services/pdf_generator.py` | Motor ReportLab (466 linhas) |
+| `backend/app/api/routers/reports.py` | Endpoint + mapeamento canvas→grafo (294 linhas) |
+| `frontend/src/api.ts` | `downloadProjectReport(projectId)` → blob download |
+| `frontend/src/components/CanvasPersistenceBar.tsx` | Botão "Exportar Memorial (PDF)" |
+
+### Testes
+
+| Arquivo | Cobertura |
+|---|---|
+| `backend/app/tests/test_reports.py` | 11 testes: 5 endpoint (404/422/200) + 6 unitários de mapeamento |
+| `frontend/src/components/__tests__/CanvasPersistenceBar.test.tsx` | 11 testes: render, click, loading, error (422/500/blob) |

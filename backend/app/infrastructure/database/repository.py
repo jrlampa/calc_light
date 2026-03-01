@@ -28,11 +28,21 @@ class ProjectRepository:
             return [Project(**dict(row)) for row in rows]
 
     def get_project(self, project_id: int) -> Project | None:
+        import json
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
             row = cursor.fetchone()
-            return Project(**dict(row)) if row else None
+            if not row:
+                return None
+            d = dict(row)
+            # canvas_state é armazenado como JSON TEXT — desserializar antes do Pydantic (Fase 23/24)
+            if isinstance(d.get("canvas_state"), str):
+                try:
+                    d["canvas_state"] = json.loads(d["canvas_state"])
+                except (json.JSONDecodeError, TypeError):
+                    d["canvas_state"] = None
+            return Project(**d)
 
     # --- Project Nodes ---
     def add_node(self, node: ProjectNode) -> ProjectNode:
