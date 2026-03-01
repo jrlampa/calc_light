@@ -25,6 +25,7 @@ class ProjectResponse(ProjectBase):
     created_at: str | None = None
     updated_at: str | None = None
     enable_equipment_drag: bool = False
+    canvas_state: dict | None = None
 
 
 class ProjectNodeBase(BaseModel):
@@ -107,3 +108,25 @@ class ProjectSettingsUpdate(BaseModel):
 class NodeEquipmentUpdate(BaseModel):
     """Payload para substituir os equipamentos acoplados a um nó (Fase 19)."""
     equipment_ids: list[int]
+
+
+# ── Canvas Persistence (Fase 23) ────────────────────────────────────────
+
+class CanvasStateSave(BaseModel):
+    """Payload enviado pelo frontend para guardar o estado do React Flow."""
+    nodes: list[dict]
+    edges: list[dict]
+    viewport: dict | None = None
+
+    class Config:
+        extra = "allow"
+
+
+class CanvasStateResponse(BaseModel):
+    """Retorno do GET canvas: inclui o canvas_state e metadados do projeto."""
+    project_id: int
+    has_canvas: bool
+    nodes: list[dict]
+    edges: list[dict]
+    viewport: dict | None = None
+    saved_at: str | None = None

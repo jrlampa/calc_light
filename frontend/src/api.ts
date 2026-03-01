@@ -36,3 +36,14 @@ export async function calculateNetwork(payload: object) {
     const response = await api.post('/api/v1/calculate-network', payload);
     return response.data;
 }
+
+// ── Canvas Persistence (Fase 23) ──
+export async function saveCanvas(projectId: number, payload: { nodes: any[]; edges: any[] }) {
+    const response = await api.put(`/projects/${projectId}/canvas`, payload);
+    return response.data;
+}
+
+export async function loadCanvas(projectId: number) {
+    const response = await api.get(`/projects/${projectId}/canvas`);
+    return response.data;
+}

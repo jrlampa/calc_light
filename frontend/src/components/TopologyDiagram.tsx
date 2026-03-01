@@ -9,6 +9,7 @@ import { useUIStore } from '../store';
 import GisImportModal, { type ParsedPoint } from './GisImportModal';
 import SolverModal from './SolverModal';
 import TopologyCanvas from './TopologyCanvas';
+import CanvasPersistenceBar from './CanvasPersistenceBar';
 
 export default function TopologyDiagram() {
     const { selectedProjectId } = useUIStore();
@@ -96,6 +97,7 @@ export default function TopologyDiagram() {
                 </div>
 
                 <ReactFlowProvider>
+                    <CanvasPersistenceBar projectId={selectedProjectId} />
                     <TopologyCanvas projectId={selectedProjectId} />
                 </ReactFlowProvider>
             </div>

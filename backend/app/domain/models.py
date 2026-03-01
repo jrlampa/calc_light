@@ -52,6 +52,7 @@ class Project(ProjectBase):
     created_at: str | None = None
     updated_at: str | None = None
     enable_equipment_drag: bool = False
+    canvas_state: dict | None = None
 
 class ProjectNodeBase(BaseModel):
     project_id: int
