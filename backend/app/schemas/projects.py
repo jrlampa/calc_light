@@ -116,7 +116,10 @@ class CanvasStateSave(BaseModel):
     """Payload enviado pelo frontend para guardar o estado do React Flow."""
     nodes: list[dict]
     edges: list[dict]
-    viewport: dict = {"x": 0, "y": 0, "zoom": 1.0}  # zoom + pan
+    viewport: dict | None = None
+
+    class Config:
+        extra = "allow"
 
 
 class CanvasStateResponse(BaseModel):
@@ -125,5 +128,5 @@ class CanvasStateResponse(BaseModel):
     has_canvas: bool
     nodes: list[dict]
     edges: list[dict]
-    viewport: dict
+    viewport: dict | None = None
     saved_at: str | None = None

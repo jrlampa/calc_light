@@ -1,5 +1,3 @@
-import json
-import os
 import sqlite3
 
 from app.domain.models import CatalogEquipment, NodeSpanConfig, Pole, Project, ProjectNode
@@ -10,7 +8,6 @@ class ProjectRepository:
         self.db_path = db_path
 
     def _get_connection(self):
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn

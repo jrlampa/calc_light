@@ -1,164 +1,108 @@
-/**
- * CanvasPersistenceBar.tsx — Fase 23
- *
- * Barra de persistência do canvas React Flow.
- * Botões: 💾 Guardar | 📂 Carregar
- *
- * Serializa nodes + edges + viewport (zoom/pan) e persiste no backend.
- * Ao carregar, restaura o canvas e ajusta o viewport via ReactFlow instance.
- */
-import { useState, useCallback } from 'react';
-import { useReactFlow, type Node, type Edge, type Viewport } from '@xyflow/react';
+import React, { useState } from 'react';
+import { useReactFlow } from 'reactflow';
 import { toast } from 'sonner';
 import { saveCanvas, loadCanvas } from '../api';
-import { useTopologyHistoryStore } from '../store';
-import type { PoleNodeData } from './CustomNode';
-import type { ConductorEdgeData } from './CustomEdge';
 
 interface CanvasPersistenceBarProps {
     projectId: number;
-    /** Função para forçar a actualização dos nós locais após um load */
-    onLoad: (nodes: Node<PoleNodeData>[], edges: Edge<ConductorEdgeData>[]) => void;
 }
 
-export default function CanvasPersistenceBar({ projectId, onLoad }: CanvasPersistenceBarProps) {
+const CanvasPersistenceBar: React.FC<CanvasPersistenceBarProps> = ({ projectId }) => {
+    const { getNodes, getEdges, setNodes, setEdges, setViewport, getViewport } = useReactFlow();
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const { getNodes, getEdges, getViewport, setViewport } = useReactFlow();
-    const { setTopologySnapshot } = useTopologyHistoryStore();
 
-    // ── 💾 Guardar ──────────────────────────────────────────────────────────
-    const handleSave = useCallback(async () => {
-        if (isSaving || isLoading) return;
+    const handleSave = async () => {
         setIsSaving(true);
         try {
-            const nodes = getNodes() as Node<PoleNodeData>[];
-            const edges = getEdges() as Edge<ConductorEdgeData>[];
-            const viewport: Viewport = getViewport();
+            const nodes = getNodes();
+            const edges = getEdges();
+            const viewport = getViewport();
+
+            // O backend espera { nodes, edges }, vamos incluir o viewport dentro de um nó invisível ou metadado?
+            // Melhor: como o backend é Smart, vamos guardar o viewport num campo 'viewport' no JSON.
+            // Para isso, o schema CanvasStateSave deve aceitar campos extras or ser flexível.
 
             await saveCanvas(projectId, {
-                nodes: nodes.map(n => ({
-                    id: n.id,
-                    type: n.type,
-                    position: n.position,
-                    data: n.data,
-                })),
-                edges: edges.map(e => ({
-                    id: e.id,
-                    source: e.source,
-                    target: e.target,
-                    type: e.type,
-                    data: e.data,
-                })),
-                viewport,
+                nodes,
+                edges,
+                // @ts-expect-error - O backend aceita viewport extra via Config.extra = allow
+                viewport
             });
 
-            toast.success('Projeto guardado com sucesso! 💾', { duration: 3000 });
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Erro ao guardar';
-            toast.error(`Falha ao guardar: ${msg}`);
-            console.error(err);
+            toast.success('Projeto guardado com sucesso!', {
+                description: `${nodes.length} nós e ${edges.length} arestas salvos na nuvem.`,
+                icon: '💾'
+            });
+        } catch (error) {
+            console.error('Erro ao salvar canvas:', error);
+            toast.error('Erro ao guardar projeto. Tente novamente.');
         } finally {
             setIsSaving(false);
         }
-    }, [isSaving, isLoading, projectId, getNodes, getEdges, getViewport]);
+    };
 
-    // ── 📂 Carregar ─────────────────────────────────────────────────────────
-    const handleLoad = useCallback(async () => {
-        if (isSaving || isLoading) return;
+    const handleLoad = async () => {
         setIsLoading(true);
         try {
-            const result = await loadCanvas(projectId);
+            const data = await loadCanvas(projectId);
 
-            if (!result.has_canvas) {
-                toast.info('Nenhum canvas salvo encontrado neste projeto.', { duration: 3000 });
-                return;
+            if (data.has_canvas) {
+                // Restaurar nós e arestas
+                setNodes(data.nodes || []);
+                setEdges(data.edges || []);
+
+                // Restaurar viewport se existir no JSON
+                if (data.viewport) {
+                    setViewport(data.viewport, { duration: 800 });
+                }
+
+                toast.success('Projeto carregado!', {
+                    description: 'Estado do canvas restaurado com sucesso.',
+                    icon: '📂'
+                });
+            } else {
+                toast.info('Nenhum canvas salvo encontrado para este projeto.');
             }
-
-            const nodes = result.nodes as Node<PoleNodeData>[];
-            const edges = result.edges as Edge<ConductorEdgeData>[];
-            const viewport = result.viewport as Viewport;
-
-            // Inject into local state via the parent's callback
-            onLoad(nodes, edges);
-
-            // Restore viewport (zoom + pan) — o "segredo de ouro" do UX
-            setViewport(viewport, { duration: 400 });
-
-            // Persist to undo/redo store
-            setTopologySnapshot(
-                projectId,
-                nodes.map(n => ({
-                    id: n.id,
-                    type: n.type ?? 'pole',
-                    position: n.position,
-                    data: n.data as PoleNodeData,
-                })),
-                edges.map(e => ({
-                    id: e.id,
-                    source: e.source,
-                    target: e.target,
-                    type: e.type ?? 'conductors',
-                    data: e.data as ConductorEdgeData,
-                    sourceHandle: null,
-                    targetHandle: null,
-                }))
-            );
-
-            toast.success('Canvas restaurado com sucesso! 📂', { duration: 3000 });
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Erro ao carregar';
-            toast.error(`Falha ao carregar: ${msg}`);
-            console.error(err);
+        } catch (error) {
+            console.error('Erro ao carregar canvas:', error);
+            toast.error('Erro ao carregar projeto.');
         } finally {
             setIsLoading(false);
         }
-    }, [isSaving, isLoading, projectId, onLoad, setViewport, setTopologySnapshot]);
-
-    // ── Render ───────────────────────────────────────────────────────────────
-    const btnBase = [
-        'flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold',
-        'border transition-all duration-200 select-none',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-    ].join(' ');
-
-    const btnSave = isSaving || isLoading
-        ? `${btnBase} bg-slate-700/80 text-slate-400 border-slate-600`
-        : `${btnBase} bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border-white/20 hover:shadow-[0_4px_16px_rgba(16,185,129,0.4)] active:scale-95`;
-
-    const btnLoad = isSaving || isLoading
-        ? `${btnBase} bg-slate-700/80 text-slate-400 border-slate-600`
-        : `${btnBase} bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border-white/20 hover:shadow-[0_4px_16px_rgba(59,130,246,0.4)] active:scale-95`;
-
-    const Spinner = () => (
-        <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-    );
+    };
 
     return (
-        <div className="flex items-center gap-2">
-            {/* 💾 Guardar Projeto */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 p-1.5 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl shadow-xl transition-all hover:shadow-2xl">
             <button
-                id="btn-guardar-canvas"
                 onClick={handleSave}
-                disabled={isSaving || isLoading}
-                className={btnSave}
-                title="Guardar o estado atual do canvas na base de dados"
+                disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all active:scale-95 disabled:opacity-50"
             >
-                {isSaving ? <Spinner /> : <span>💾</span>}
+                {isSaving ? (
+                    <span className="w-4 h-4 border-2 border-slate-300 border-t-violet-500 rounded-full animate-spin" />
+                ) : (
+                    <span className="text-lg">💾</span>
+                )}
                 {isSaving ? 'Guardando...' : 'Guardar'}
             </button>
 
-            {/* 📂 Carregar Projeto */}
+            <div className="w-px h-6 bg-slate-200 mx-1" />
+
             <button
-                id="btn-carregar-canvas"
                 onClick={handleLoad}
-                disabled={isSaving || isLoading}
-                className={btnLoad}
-                title="Restaurar o canvas salvo da base de dados"
+                disabled={isLoading}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all active:scale-95 disabled:opacity-50"
             >
-                {isLoading ? <Spinner /> : <span>📂</span>}
+                {isLoading ? (
+                    <span className="w-4 h-4 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin" />
+                ) : (
+                    <span className="text-lg">📂</span>
+                )}
                 {isLoading ? 'Carregando...' : 'Carregar'}
             </button>
         </div>
     );
-}
+};
+
+export default CanvasPersistenceBar;

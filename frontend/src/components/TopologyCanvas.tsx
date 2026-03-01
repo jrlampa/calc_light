@@ -12,7 +12,6 @@ import {
     Controls,
     Background,
     MiniMap,
-    Panel,
     type Node,
     type Edge,
     type NodeChange,
@@ -31,7 +30,6 @@ import CustomNode, { type PoleNodeData } from './CustomNode';
 import CustomEdge, { type ConductorEdgeData } from './CustomEdge';
 import GhostNodeModal, { type GhostNodeChoice } from './GhostNodeModal';
 import ElectricalSidePanel from './ElectricalSidePanel';
-import CanvasPersistenceBar from './CanvasPersistenceBar';
 
 // ── TIPOS DA RESPOSTA DA API ─────────────────────────────────────────────
 
@@ -156,14 +154,6 @@ export default function TopologyCanvas({ projectId }: { projectId: number }) {
             setIsCalculating(false);
         }
     }, [isCalculating, localNodes, topology, setResults, setIsCalculating]);
-
-    // ── Canvas Load callback (Fase 23) ──────────────────────────────────────
-    const handleCanvasLoad = useCallback(
-        (nodes: Node<PoleNodeData>[], _edges: Edge<ConductorEdgeData>[]) => {
-            setLocalNodes(nodes);
-        },
-        []
-    );
 
     const apiMappedNodes = useMemo<Node<PoleNodeData>[]>(() => {
         const apiNodes: ApiNode[] = topology?.nodes ?? [];
@@ -456,14 +446,6 @@ export default function TopologyCanvas({ projectId }: { projectId: number }) {
                     className="!bg-white/80 !border-slate-200 !rounded-lg !shadow-md"
                     maskColor="rgba(148,163,184,0.1)"
                 />
-
-                {/* ── Barra Guardar/Carregar Canvas — Fase 23 ── */}
-                <Panel position="top-left">
-                    <CanvasPersistenceBar
-                        projectId={projectId}
-                        onLoad={(nodes, edges) => handleCanvasLoad(nodes, edges)}
-                    />
-                </Panel>
 
                 {/* ── Botão Calcular Rede CQT — Fase 22 ── */}
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50">

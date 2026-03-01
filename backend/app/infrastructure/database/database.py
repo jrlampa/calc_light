@@ -54,7 +54,6 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
 
 
 def get_db_connection():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)  # garante que a pasta existe
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     _apply_migrations(conn)

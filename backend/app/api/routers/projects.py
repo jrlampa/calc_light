@@ -162,60 +162,48 @@ def export_project_excel(project_id: int, repo: ProjectRepository = Depends(get_
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
-# ── Canvas Persistence (Fase 23) ──────────────────────────────────────────────
 
-@router.put("/{project_id}/canvas", response_model=CanvasStateResponse, tags=["Canvas"])
-def save_canvas(
+# ── Canvas Persistence (Fase 23) ────────────────────────────────────────────
+
+@router.put("/{project_id}/canvas", response_model=CanvasStateResponse)
+def save_project_canvas(
     project_id: int,
     payload: CanvasStateSave,
-    repo: ProjectRepository = Depends(get_repository),
+    repo: ProjectRepository = Depends(get_repository)
 ):
-    """Persiste o estado completo do React Flow canvas (nós, arestas e viewport).
-
-    Idempotente: pode ser chamado múltiplas vezes — sobrescreve o estado anterior.
-    Retorna o canvas confirmado para o frontend usar como source-of-truth.
-    """
-    canvas = {
-        "nodes": payload.nodes,
-        "edges": payload.edges,
-        "viewport": payload.viewport,
-    }
-    try:
-        updated = repo.save_canvas_state(project_id, canvas)
-    except ValueError as exc:
-        raise HTTPException(status_code=413, detail=str(exc)) from exc
-
-    if not updated:
+    """Salva o estado completo do React Flow (nós, arestas e viewport) no projeto."""
+    # Convertemos o payload para dict para o repositório serializar
+    canvas_dict = payload.dict()
+    success = repo.save_canvas_state(project_id, canvas_dict)
+    if not success:
         raise HTTPException(status_code=404, detail="Projeto não encontrado")
-
+    
     return CanvasStateResponse(
         project_id=project_id,
         has_canvas=True,
         nodes=payload.nodes,
         edges=payload.edges,
         viewport=payload.viewport,
+        saved_at="recentemente"
     )
 
-
-@router.get("/{project_id}/canvas", response_model=CanvasStateResponse, tags=["Canvas"])
-def load_canvas(
+@router.get("/{project_id}/canvas", response_model=CanvasStateResponse)
+def get_project_canvas(
     project_id: int,
-    repo: ProjectRepository = Depends(get_repository),
+    repo: ProjectRepository = Depends(get_repository)
 ):
-    """Carrega o canvas_state do projeto.
-
-    Retorna has_canvas=False com listas vazias se o canvas ainda não foi salvo.
-    Retorna 404 se o projeto não existir.
-    """
+    """Recupera o estado salvo do React Flow para este projeto."""
     canvas = repo.get_canvas_state(project_id)
     if canvas is None:
         raise HTTPException(status_code=404, detail="Projeto não encontrado")
-
+    
     has_canvas = bool(canvas)
+    # Reconstituir o schema de resposta com o que veio do JSON
     return CanvasStateResponse(
         project_id=project_id,
         has_canvas=has_canvas,
         nodes=canvas.get("nodes", []),
         edges=canvas.get("edges", []),
-        viewport=canvas.get("viewport", {"x": 0, "y": 0, "zoom": 1.0}),
+        viewport=canvas.get("viewport"),
+        saved_at="armazenado"
     )
