@@ -32,7 +32,8 @@ def temp_db_path():
         label TEXT,
         pos_x REAL,
         pos_y REAL,
-        effort_dan REAL
+        effort_dan REAL,
+        is_ghost INTEGER DEFAULT 0
     )''')
     conn.execute('''CREATE TABLE IF NOT EXISTS node_span_configs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -160,4 +161,20 @@ def test_create_topology_and_forces(client):
     forces = force_res.json()
     assert len(forces) > 0
     assert "magnitude_dan" in forces[0]
+
+
+def test_export_excel_empty_project_returns_400(client):
+    """GET /projects/{id}/export/excel deve retornar 400 quando o projeto não possui postes."""
+    proj_res = client.post("/projects/", json={"name": "Projeto Vazio Export"})
+    p_id = proj_res.json()["id"]
+
+    res = client.get(f"/projects/{p_id}/export/excel")
+    assert res.status_code == 400
+    assert "vazio" in res.json()["detail"].lower()
+
+
+def test_export_excel_project_not_found_returns_404(client):
+    """GET /projects/99999/export/excel deve retornar 404 para projeto inexistente."""
+    res = client.get("/projects/99999/export/excel")
+    assert res.status_code == 404
 

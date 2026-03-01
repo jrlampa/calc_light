@@ -1,6 +1,6 @@
 import sqlite3
 
-from app.domain.models import NodeSpanConfig, Project, ProjectNode
+from app.domain.models import CatalogEquipment, NodeSpanConfig, Pole, Project, ProjectNode
 
 
 class ProjectRepository:
@@ -39,9 +39,10 @@ class ProjectRepository:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO project_nodes (project_id, pole_id, label, pos_x, pos_y, effort_dan)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (node.project_id, node.pole_id, node.label, node.pos_x, node.pos_y, node.effort_dan))
+                INSERT INTO project_nodes (project_id, pole_id, label, pos_x, pos_y, effort_dan, is_ghost)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (node.project_id, node.pole_id, node.label, node.pos_x, node.pos_y, node.effort_dan,
+                  1 if node.is_ghost else 0))
             node.id = cursor.lastrowid
             conn.commit()
             return node
@@ -51,7 +52,12 @@ class ProjectRepository:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM project_nodes WHERE project_id = ?", (project_id,))
             rows = cursor.fetchall()
-            return [ProjectNode(**dict(row)) for row in rows]
+            result = []
+            for row in rows:
+                d = dict(row)
+                d["is_ghost"] = bool(d.get("is_ghost", 0))
+                result.append(ProjectNode(**d))
+            return result
 
     def update_node_effort(self, node_id: int, effort_dan: float):
         with self._get_connection() as conn:
@@ -70,7 +76,32 @@ class ProjectRepository:
             conn.commit()
             cursor.execute("SELECT * FROM project_nodes WHERE id = ?", (node_id,))
             row = cursor.fetchone()
-            return ProjectNode(**dict(row)) if row else None
+            if not row:
+                return None
+            d = dict(row)
+            d["is_ghost"] = bool(d.get("is_ghost", 0))
+            return ProjectNode(**d)
+
+    def set_node_ghost(self, node_id: int, is_ghost: bool) -> ProjectNode | None:
+        """Alterna a flag is_ghost de um nó.
+
+        Nós fantasmas exercem tração sobre postes reais mas são excluídos
+        dos relatórios de exportação e da BOM.
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE project_nodes SET is_ghost = ? WHERE id = ?",
+                (1 if is_ghost else 0, node_id)
+            )
+            conn.commit()
+            cursor.execute("SELECT * FROM project_nodes WHERE id = ?", (node_id,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            d = dict(row)
+            d["is_ghost"] = bool(d.get("is_ghost", 0))
+            return ProjectNode(**d)
 
 
     # --- Node Span Configs (Edges) ---
@@ -98,3 +129,148 @@ class ProjectRepository:
             """, (project_id,))
             rows = cursor.fetchall()
             return [NodeSpanConfig(**dict(row)) for row in rows]
+
+    def get_pole(self, pole_id: int) -> Pole | None:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM poles WHERE id = ?", (pole_id,))
+            row = cursor.fetchone()
+            return Pole(**dict(row)) if row else None
+
+    # --- GIS Import (Phase 16) ---
+
+    def import_nodes_atomic(self, nodes: list[ProjectNode]) -> list[ProjectNode]:
+        """Importa uma lista de nós em uma única transação atômica.
+
+        Em caso de qualquer falha, a transação é revertida (rollback) integralmente,
+        garantindo que o banco não fique com dados parcialmente importados.
+        """
+        if not nodes:
+            return []
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            result: list[ProjectNode] = []
+            for node in nodes:
+                cursor.execute(
+                    """
+                    INSERT INTO project_nodes (project_id, pole_id, label, pos_x, pos_y, effort_dan, is_ghost)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (node.project_id, node.pole_id, node.label, node.pos_x, node.pos_y,
+                     node.effort_dan, 1 if node.is_ghost else 0),
+                )
+                node.id = cursor.lastrowid
+                result.append(node)
+            conn.commit()
+            return result
+
+    def update_span_sag(self, span_id: int, mt_sag_m: float | None, bt_sag_m: float | None) -> bool:
+        """Atualiza as flechas MT e/ou BT de um vão.
+
+        Usado pelo Solver Global (Fase 17) ao aplicar sugestões de otimização.
+        Retorna True se alguma linha foi atualizada, False se o span_id não existe.
+        """
+        parts = []
+        params: list = []
+        if mt_sag_m is not None:
+            parts.append("mt_sag_m = ?")
+            params.append(mt_sag_m)
+        if bt_sag_m is not None:
+            parts.append("bt_sag_m = ?")
+            params.append(bt_sag_m)
+        if not parts:
+            return False
+        params.append(span_id)
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"UPDATE node_span_configs SET {', '.join(parts)} WHERE id = ?",
+                params,
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def get_outgoing_span_config(self, node_id: int) -> NodeSpanConfig | None:
+        """Retorna o vão de saída mais recente do nó (source_node_id = node_id).
+
+        Usado pela Lógica de Herança de Condutores: quando o usuário conecta um novo
+        nó ao nó de origem, os condutores do último vão de saída são herdados.
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT * FROM node_span_configs
+                WHERE source_node_id = ?
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (node_id,),
+            )
+            row = cursor.fetchone()
+            return NodeSpanConfig(**dict(row)) if row else None
+
+    # --- Configurações do Projeto (Fase 19) ---
+
+    def update_project_settings(self, project_id: int, enable_equipment_drag: bool) -> Project | None:
+        """Atualiza as configurações globais do projeto (modo avançado de arrasto)."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE projects SET enable_equipment_drag = ? WHERE id = ?",
+                (1 if enable_equipment_drag else 0, project_id),
+            )
+            conn.commit()
+            cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            d = dict(row)
+            d["enable_equipment_drag"] = bool(d.get("enable_equipment_drag", 0))
+            return Project(**d)
+
+    # --- Catálogo de Equipamentos (Fase 19) ---
+
+    def get_equipment_catalog(self) -> list[CatalogEquipment]:
+        """Retorna todos os equipamentos do catálogo estático."""
+        with self._get_connection() as conn:
+            rows = conn.execute("SELECT * FROM catalog_equipment ORDER BY name").fetchall()
+            return [CatalogEquipment(**dict(row)) for row in rows]
+
+    # --- Equipamentos por Nó (Fase 19) ---
+
+    def get_node_equipment_ids(self, node_id: int) -> list[int]:
+        """Retorna os IDs dos equipamentos acoplados a um nó."""
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                "SELECT equipment_id FROM node_equipment WHERE node_id = ?",
+                (node_id,),
+            ).fetchall()
+            return [row["equipment_id"] for row in rows]
+
+    def set_node_equipment_ids(self, node_id: int, equipment_ids: list[int]) -> list[int]:
+        """Substitui (replace) os equipamentos acoplados a um nó atomicamente."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM node_equipment WHERE node_id = ?", (node_id,))
+            for eid in equipment_ids:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO node_equipment (node_id, equipment_id) VALUES (?, ?)",
+                    (node_id, eid),
+                )
+            conn.commit()
+            return self.get_node_equipment_ids(node_id)
+
+    def get_node_equipment_total_area(self, node_id: int) -> float:
+        """Retorna a soma das áreas de arrasto de todos os equipamentos acoplados ao nó."""
+        with self._get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT COALESCE(SUM(e.area_arrasto_m2), 0.0) AS total
+                FROM node_equipment ne
+                JOIN catalog_equipment e ON ne.equipment_id = e.id
+                WHERE ne.node_id = ?
+                """,
+                (node_id,),
+            ).fetchone()
+            return float(row["total"]) if row else 0.0

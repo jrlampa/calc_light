@@ -24,6 +24,7 @@ class ProjectResponse(ProjectBase):
     id: int
     created_at: str | None = None
     updated_at: str | None = None
+    enable_equipment_drag: bool = False
 
 
 class ProjectNodeBase(BaseModel):
@@ -33,6 +34,7 @@ class ProjectNodeBase(BaseModel):
     pos_x: float = 0.0
     pos_y: float = 0.0
     effort_dan: float = 0.0
+    is_ghost: bool = False
 
     @field_validator("label")
     @classmethod
@@ -90,3 +92,18 @@ class NodePositionUpdate(BaseModel):
     """Payload enviado pelo React Flow ao soltar um nó (drag-and-drop)."""
     pos_x: float
     pos_y: float
+
+
+class NodeGhostUpdate(BaseModel):
+    """Payload para alternar a flag is_ghost de um nó."""
+    is_ghost: bool
+
+
+class ProjectSettingsUpdate(BaseModel):
+    """Payload para atualizar as configurações globais do projeto (Fase 19)."""
+    enable_equipment_drag: bool
+
+
+class NodeEquipmentUpdate(BaseModel):
+    """Payload para substituir os equipamentos acoplados a um nó (Fase 19)."""
+    equipment_ids: list[int]

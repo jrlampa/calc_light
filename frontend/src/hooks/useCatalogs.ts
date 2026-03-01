@@ -17,6 +17,12 @@ export interface ConductorType {
     network_type: string;
 }
 
+export interface EquipmentType {
+    id: number;
+    name: string;
+    area_arrasto_m2: number;
+}
+
 export const useCatalogs = () => {
     const polesQuery = useQuery({
         queryKey: ['catalogs', 'poles'],
@@ -30,10 +36,18 @@ export const useCatalogs = () => {
         staleTime: Infinity,
     });
 
+    const equipmentQuery = useQuery({
+        queryKey: ['catalogs', 'equipment'],
+        queryFn: () => api.get<EquipmentType[]>('/catalogs/equipment').then((res) => res.data),
+        staleTime: Infinity,
+    });
+
     return {
         poles: polesQuery.data || [],
         conductors: conductorsQuery.data || [],
+        equipment: equipmentQuery.data || [],
         isLoadingPoles: polesQuery.isLoading,
         isLoadingConductors: conductorsQuery.isLoading,
+        isLoadingEquipment: equipmentQuery.isLoading,
     };
 };

@@ -1,0 +1,92 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CACL LIGHT — Docker Compose para Produção Local (Uso Diário)
+# Fase 21 — One-Click Local Production + Chrome App Mode + SQLite Viewer
+#
+# USO:
+#   Windows : iniciar.bat
+#   Linux   : ./iniciar.sh
+#
+# PERSISTÊNCIA DE DADOS:
+#   Banco de dados → ./local_data/db/cacl_light.db
+#   Template Excel → ./local_data/templates/modelo.xlsm
+#
+# Se o Docker for resetado, reiniciado ou a imagem reconstruída,
+# os dados permanecem intactos nessas pastas locais.
+#
+# PORTAS:
+#   http://localhost      → Aplicação CACL LIGHT (frontend Nginx)
+#   http://localhost:8000 → API FastAPI (docs em /docs)
+#   http://localhost:8080 → Visualizador SQLite (sqlite-web, read-only)
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Banco de dados SQLite — pasta visível na máquina host
+      - ./local_data/db:/database
+      # Template Excel (.xlsm) — permite atualizar o modelo sem rebuild
+      - ./local_data/templates:/app/app/templates
+    environment:
+      - DATABASE_URL=sqlite:////database/cacl_light.db
+    networks:
+      - cacl_local
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cacl_local
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Visualizador SQLite ultraleve — inspecione o banco sem instalar nada extra
+  # Acesso: http://localhost:8080
+  sqlite-web:
+    image: coleifer/sqlite-web:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mesma pasta do banco — montada em read-only para segurança
+      - ./local_data/db:/data:ro
+    command: ["-H", "0.0.0.0", "-r", "/data/cacl_light.db"]
+    networks:
+      - cacl_local
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+networks:
+  cacl_local:
+    driver: bridge

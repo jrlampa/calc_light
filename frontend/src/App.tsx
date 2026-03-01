@@ -1,78 +1,91 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
 import { AlertTriangle, X } from 'lucide-react';
-import { useUIStore } from './store';
-import { FileText, Activity, Network, Plus, FolderOpen } from 'lucide-react';
+import { useUIStore, useTopologyHistoryStore } from './store';
+import { FileText, Activity, Network } from 'lucide-react';
 import TractionCalculator from './components/TractionCalculator';
 import TopologyDiagram from './components/TopologyDiagram';
 import ForceDiagram from './components/ForceDiagram';
 import Layout from './components/Layout';
 import ShortcutsModal from './components/ShortcutsModal';
-import { api } from './api';
+import NewProjectModal from './components/NewProjectModal';
+import ProjectSidebar from './components/ProjectSidebar';
+import ExportButton from './components/ExportButton';
+import RecoveryModal from './components/RecoveryModal';
+import { api, downloadProjectExcel } from './api';
 
-// ── MODAL DE NOVO PROJETO ────────────────────────────────────────────────
-function NewProjectModal({ onConfirm, onClose }: { onConfirm: (name: string) => void; onClose: () => void }) {
-  const [name, setName] = useState('');
+// ── Auto-save key helpers ─────────────────────────────────────────────────
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = name.trim();
-    if (trimmed) {
-      onConfirm(trimmed);
-      onClose();
-    }
-  };
+const backupKey = (projectId: number) => `cacl_backup_${projectId}`;
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="w-full max-w-sm bg-white/80 backdrop-blur-xl border border-white/70 rounded-2xl shadow-2xl shadow-slate-400/30 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200/60 bg-white/40">
-          <h2 className="text-base font-bold text-slate-800">Novo Projeto</h2>
-        </div>
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Nome do Projeto</label>
-            <input
-              autoFocus
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Ex: Linha 01 - Subestação Norte"
-              className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2 text-slate-700 outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all"
-            />
-          </div>
-          <div className="flex gap-3 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100/60 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md shadow-blue-500/30 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-            >
-              Criar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+interface LocalBackup {
+    savedAt: string; // ISO timestamp
+    projectId: number;
+    nodes: unknown[];
+    edges: unknown[];
 }
 
-// ── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────
+function saveToLocalStorage(projectId: number, nodes: unknown[], edges: unknown[]) {
+    const backup: LocalBackup = {
+        savedAt: new Date().toISOString(),
+        projectId,
+        nodes,
+        edges,
+    };
+    try {
+        localStorage.setItem(backupKey(projectId), JSON.stringify(backup));
+    } catch {
+        // localStorage quota exceeded — silently skip
+    }
+}
+
+function loadFromLocalStorage(projectId: number): LocalBackup | null {
+    try {
+        const raw = localStorage.getItem(backupKey(projectId));
+        return raw ? (JSON.parse(raw) as LocalBackup) : null;
+    } catch {
+        return null;
+    }
+}
+
+// ── Debounce helper ───────────────────────────────────────────────────────
+
+function useDebounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): T {
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const fnRef = useRef<T>(fn);
+    // Keep fnRef up-to-date without resetting the timer
+    fnRef.current = fn;
+    const debounced = useCallback(
+        (...args: Parameters<T>) => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => fnRef.current(...args), delay);
+        },
+        // delay is intentionally the only dep — fnRef handles fn updates without creating a new timer
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [delay]
+    );
+    return debounced as T;
+}
+
+// ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────
 function App() {
-  const { activeTab, setActiveTab, selectedProjectId, setSelectedProjectId, overloadedNodeIds, setOverloadedNodeIds, highlightOverloaded, setHighlightOverloaded } = useUIStore();
+  const {
+    activeTab, setActiveTab,
+    selectedProjectId, setSelectedProjectId,
+    overloadedNodeIds, setOverloadedNodeIds,
+    highlightOverloaded, setHighlightOverloaded,
+    setSyncStatus, setLastLocalSaveAt,
+  } = useUIStore();
   const queryClient = useQueryClient();
 
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  // ── Disaster Recovery state (Phase 18) ──────────────────────────────
+  const [recoveryBackup, setRecoveryBackup] = useState<{ savedAt: string; backup: LocalBackup } | null>(null);
 
   // Fetch Projects List
   const { data: projects = [], isLoading } = useQuery({
@@ -101,6 +114,77 @@ function App() {
     setOverloadedNodeIds(overloaded);
   }, [topology, setOverloadedNodeIds]);
 
+  // ── Auto-Save: subscribe to topology history changes (Phase 18) ──────
+  const debouncedSave = useDebounce(
+    useCallback(
+      (projectId: number, nodes: unknown[], edges: unknown[]) => {
+        saveToLocalStorage(projectId, nodes, edges);
+        const ts = new Date().toISOString();
+        setLastLocalSaveAt(ts);
+        setSyncStatus('saved');
+      },
+      [setLastLocalSaveAt, setSyncStatus]
+    ),
+    1500
+  );
+
+  useEffect(() => {
+    // Subscribe to topology history store changes
+    const unsub = useTopologyHistoryStore.subscribe((state) => {
+      if (!state.projectId || state.nodes.length === 0) return;
+      setSyncStatus('saving');
+      debouncedSave(state.projectId, state.nodes, state.edges);
+    });
+    return unsub;
+  }, [debouncedSave, setSyncStatus]);
+
+  // ── Disaster Recovery: check on project select (Phase 18) ───────────
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setRecoveryBackup(null);
+      return;
+    }
+
+    const backup = loadFromLocalStorage(selectedProjectId);
+    if (!backup) return;
+
+    // Compare with server project updated_at
+    const projectData = (Array.isArray(projects) ? projects : []).find(
+      (p: { id: number; updated_at?: string }) => p.id === selectedProjectId
+    );
+    if (!projectData?.updated_at) return;
+
+    const serverTs = new Date(projectData.updated_at).getTime();
+    const localTs = new Date(backup.savedAt).getTime();
+
+    if (localTs > serverTs) {
+      setRecoveryBackup({ savedAt: backup.savedAt, backup });
+    } else {
+      setRecoveryBackup(null);
+    }
+  }, [selectedProjectId, projects]);
+
+  const handleRecoverLocal = useCallback(() => {
+    if (!recoveryBackup || !selectedProjectId) return;
+    // Restore the topology history store from the backup so TopologyCanvas syncs
+    const { setTopologySnapshot } = useTopologyHistoryStore.getState();
+    setTopologySnapshot(
+      selectedProjectId,
+      recoveryBackup.backup.nodes as import('./store').PersistedNode[],
+      recoveryBackup.backup.edges as import('./store').PersistedEdge[]
+    );
+    setRecoveryBackup(null);
+    toast.success('Versão local recuperada com sucesso!');
+  }, [recoveryBackup, selectedProjectId]);
+
+  const handleDiscardLocal = useCallback(() => {
+    if (selectedProjectId) {
+      try { localStorage.removeItem(backupKey(selectedProjectId)); } catch { /* ignore */ }
+    }
+    setRecoveryBackup(null);
+    toast('Versão da nuvem carregada.', { icon: '☁️' });
+  }, [selectedProjectId]);
+
   // Create Project Mutation
   const createProjectMutation = useMutation({
     mutationFn: (name: string) => api.post('/projects', { name }).then(res => res.data),
@@ -114,9 +198,33 @@ function App() {
 
   // ── Atalhos Globais ──────────────────────────────────────────────────
   // Alt+1/2/3: navegar entre abas
-  useHotkeys('alt+1', () => { setActiveTab('data');     toast('Aba 1: Entrada de Dados', { icon: '��' }); }, { preventDefault: true });
+  useHotkeys('alt+1', () => { setActiveTab('data');     toast('Aba 1: Entrada de Dados', { icon: '📋' }); }, { preventDefault: true });
   useHotkeys('alt+2', () => { setActiveTab('forces');   toast('Aba 2: Diagrama de Forças', { icon: '⚡' }); }, { preventDefault: true });
   useHotkeys('alt+3', () => { setActiveTab('topology'); toast('Aba 3: Unifilar Topológico', { icon: '🗺️' }); }, { preventDefault: true });
+
+  // Ctrl+Z: Desfazer (Undo) — Phase 18
+  useHotkeys('ctrl+z', (e) => {
+    e.preventDefault();
+    const { undo, pastStates } = useTopologyHistoryStore.temporal.getState();
+    if (pastStates.length === 0) {
+      toast('Nada para desfazer.', { icon: '↩️' });
+      return;
+    }
+    undo();
+    toast('Desfeito.', { icon: '↩️' });
+  }, { preventDefault: true });
+
+  // Ctrl+Y / Ctrl+Shift+Z: Refazer (Redo) — Phase 18
+  useHotkeys('ctrl+y,ctrl+shift+z', (e) => {
+    e.preventDefault();
+    const { redo, futureStates } = useTopologyHistoryStore.temporal.getState();
+    if (futureStates.length === 0) {
+      toast('Nada para refazer.', { icon: '↪️' });
+      return;
+    }
+    redo();
+    toast('Refeito.', { icon: '↪️' });
+  }, { preventDefault: true });
 
   // Ctrl+S: acionar submit do formulário ativo na Aba 1
   useHotkeys('ctrl+s', (e) => {
@@ -129,6 +237,8 @@ function App() {
     } else {
       toast('Ctrl+S disponível apenas na Aba de Dados.', { icon: 'ℹ️' });
     }
+    // Mark as synced (manual save to API)
+    setSyncStatus('synced');
   }, { preventDefault: true });
 
   // Shift+?: abrir/fechar mapa de atalhos
@@ -141,57 +251,14 @@ function App() {
   });
 
   const SidebarContent = (
-    <>
-      <div className="flex items-center gap-2 mb-8 text-xl font-bold text-slate-800">
-        <div className="p-2 bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-500/30">
-          <Activity size={24} />
-        </div>
-        CACL LIGHT
-      </div>
-
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Meus Projetos</span>
-        <button
-          onClick={() => setIsNewProjectOpen(true)}
-          className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 p-1 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-          title="Novo Projeto (Ctrl+N)"
-          aria-label="Criar novo projeto"
-        >
-          <Plus size={18} />
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-        {isLoading ? (
-          <p className="text-sm text-slate-500 animate-pulse">Carregando projetos...</p>
-        ) : (Array.isArray(projects) ? projects : []).map((p: { id: number; name: string }) => (
-          <button
-            key={p.id}
-            onClick={() => setSelectedProjectId(p.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 border focus:outline-none focus:ring-2 focus:ring-blue-400/50 ${selectedProjectId === p.id
-              ? 'bg-white border-white/80 shadow-sm text-blue-700 font-medium'
-              : 'bg-transparent border-transparent text-slate-600 hover:bg-white/40 hover:border-white/40'
-              }`}
-          >
-            <FolderOpen size={16} className={selectedProjectId === p.id ? "text-blue-500" : "text-slate-400"} />
-            <span className="truncate">{p.name}</span>
-          </button>
-        ))}
-        {projects.length === 0 && !isLoading && (
-          <p className="text-xs text-slate-400 text-center mt-4">Nenhum projeto encontrado.</p>
-        )}
-      </div>
-
-      {/* Botão de atalhos no rodapé da sidebar */}
-      <button
-        onClick={() => setIsShortcutsOpen(true)}
-        className="mt-6 flex items-center gap-2 text-xs text-slate-400 hover:text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/50 rounded-md px-1 py-0.5"
-        title="Atalhos de teclado (Shift+?)"
-      >
-        <kbd className="inline-flex items-center justify-center w-5 h-5 rounded border border-slate-200 bg-white/70 text-[10px] font-semibold">?</kbd>
-        Atalhos de teclado
-      </button>
-    </>
+    <ProjectSidebar
+      projects={Array.isArray(projects) ? projects : []}
+      isLoading={isLoading}
+      selectedProjectId={selectedProjectId}
+      onSelectProject={setSelectedProjectId}
+      onNewProject={() => setIsNewProjectOpen(true)}
+      onOpenShortcuts={() => setIsShortcutsOpen(true)}
+    />
   );
 
   return (
@@ -261,6 +328,28 @@ function App() {
                 <Network size={18} /> Unifilar Topológico
                 <span className="ml-1 text-[10px] opacity-50 font-normal">Alt+3</span>
               </button>
+
+              {/* ── Botão de Exportação Excel (Glassmorphism) ─────────────── */}
+              <ExportButton
+                isExporting={isExporting}
+                onClick={async () => {
+                  if (!selectedProjectId) return;
+                  setIsExporting(true);
+                  try {
+                    await downloadProjectExcel(selectedProjectId);
+                    toast.success('Exportação concluída! Verifique seus downloads.');
+                  } catch (error: unknown) {
+                    const axErr = error as { response?: { status?: number } };
+                    if (axErr?.response?.status === 400) {
+                      toast.error('Projeto vazio, adicione postes antes de exportar');
+                    } else {
+                      toast.error('Erro ao exportar planilhas. Tente novamente.');
+                    }
+                  } finally {
+                    setIsExporting(false);
+                  }
+                }}
+              />
             </div>
 
             {/* TAB CONTENT */}
@@ -306,6 +395,15 @@ function App() {
         <NewProjectModal
           onConfirm={(name) => createProjectMutation.mutate(name)}
           onClose={() => setIsNewProjectOpen(false)}
+        />
+      )}
+
+      {/* Modal de Recuperação de Desastres (Phase 18) */}
+      {recoveryBackup && (
+        <RecoveryModal
+          savedAt={recoveryBackup.savedAt}
+          onRecover={handleRecoverLocal}
+          onDiscard={handleDiscardLocal}
         />
       )}
     </>

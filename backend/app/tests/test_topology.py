@@ -96,24 +96,67 @@ def test_utilization_percent_and_overload_flag():
 
 def test_calculate_node_force_vectors():
     node = ProjectNode(id=1, project_id=1, pole_id=1, label="Poste 1", pos_x=0, pos_y=0)
-    c1 = Conductor(id=1, name="MT-Cabo", diameter_m=0.015, weight_kg_m=0.6, cable_qty=3, network_type="Conv")
-    conductors_dict = {1: c1}
+    c_mt = Conductor(id=1, name="MT-Cabo", diameter_m=0.015, weight_kg_m=0.6, cable_qty=3, network_type="Conv")
+    c_bt = Conductor(id=2, name="BT-Cabo", diameter_m=0.010, weight_kg_m=0.3, cable_qty=4, network_type="Conv")
+    conductors_dict = {1: c_mt, 2: c_bt}
     poles_dict = {1: _make_pole(height_m=11.0, resistance_dan=600.0)}
 
     span = NodeSpanConfig(
         id=1, source_node_id=1, target_node_id=2,
         mt_conductor_id=1, mt_sag_m=0.5,
-        bt_conductor_id=0, bt_sag_m=0.0,
+        bt_conductor_id=2, bt_sag_m=0.6,
         span_length_m=50, angle_deg=90
     )
 
     vecs = calculate_node_force_vectors(node, [span], conductors_dict, poles_dict)
 
-    assert len(vecs) == 2  # 1 tramo + 1 resultante
-    assert vecs[0]["level"] == "MT1"
-    assert vecs[1]["level"] == "RESULT"
-    assert vecs[0]["magnitude_dan"] > 0
-    assert vecs[1]["magnitude_dan"] > 0
-    # RESULT vector must include nominal_capacity
-    assert "nominal_capacity" in vecs[1]
-    assert vecs[1]["nominal_capacity"] == 600.0
+    # MT1 + BT + RESULT
+    assert len(vecs) == 3
+    levels = {v["level"] for v in vecs}
+    assert "MT1" in levels
+    assert "BT" in levels
+    assert "RESULT" in levels
+
+    result_vec = next(v for v in vecs if v["level"] == "RESULT")
+    assert result_vec["magnitude_dan"] > 0
+    assert "nominal_capacity" in result_vec
+    assert result_vec["nominal_capacity"] == 600.0
+
+
+def test_calculate_node_force_vectors_as_target():
+    """Cobre o caminho target_node_id == node.id (linhas 214-216, 219-224 de topology_service.py)."""
+    # Nó 2 é o TARGET do vão (não a fonte)
+    node = ProjectNode(id=2, project_id=1, pole_id=1, label="Poste 2", pos_x=100, pos_y=0)
+    c_mt = Conductor(id=1, name="MT-Cabo", diameter_m=0.015, weight_kg_m=0.6, cable_qty=3, network_type="Conv")
+    c_bt = Conductor(id=2, name="BT-Cabo", diameter_m=0.010, weight_kg_m=0.3, cable_qty=4, network_type="Conv")
+    conductors_dict = {1: c_mt, 2: c_bt}
+    poles_dict = {1: _make_pole(height_m=11.0, resistance_dan=600.0)}
+
+    span = NodeSpanConfig(
+        id=1, source_node_id=1, target_node_id=2,
+        mt_conductor_id=1, mt_sag_m=0.5,
+        bt_conductor_id=2, bt_sag_m=0.6,
+        span_length_m=50, angle_deg=45
+    )
+
+    vecs = calculate_node_force_vectors(node, [span], conductors_dict, poles_dict)
+
+    # Deve ter MT1 + BT + RESULT
+    assert len(vecs) == 3
+    levels = {v["level"] for v in vecs}
+    assert "MT1" in levels
+    assert "BT" in levels
+    assert "RESULT" in levels
+
+    # O ângulo do vão deve ser invertido (+ 180°) para o nó alvo
+    mt_vec = next(v for v in vecs if v["level"] == "MT1")
+    expected_angle = (45 + 180) % 360
+    assert mt_vec["angle_deg"] == expected_angle
+
+
+def test_calculate_node_force_vectors_no_spans():
+    """Sem vãos conectados, retorna lista vazia (sem vetor RESULT)."""
+    node = ProjectNode(id=1, project_id=1, pole_id=1, label="Poste 1", pos_x=0, pos_y=0)
+    poles_dict = {1: _make_pole()}
+    vecs = calculate_node_force_vectors(node, [], {}, poles_dict)
+    assert vecs == []
