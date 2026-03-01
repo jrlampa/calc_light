@@ -1,0 +1,1882 @@
+{
+  "_metadata": {
+    "fase": "21.3",
+    "projeto": "CACL LIGHT",
+    "fonte": "PLANILHA_DESTRAVADA.xlsm",
+    "descricao": "Curva de Demanda (Fator de Diversificação / Simultaneidade) da Light"
+  },
+  "curva_demanda_principal": {
+    "fonte": "ANÁLISE PONTO A PONTO (visible)",
+    "colunas": {
+      "P": "QTD_Clientes",
+      "Q": "kVA/cliente",
+      "R": "Fator_Diversificacao",
+      "S": "Demanda_kVA"
+    },
+    "kva_por_cliente_base": 2.22,
+    "kva_por_cliente_nota": "CONSTANTE",
+    "plateau_inicial_ate_n_clientes": 4,
+    "plateau_fator": 3.88,
+    "step_fator_diversificacao_por_cliente": 0.56,
+    "n_max_tabelado": 300,
+    "regra_limite_excedente": "Para N > 300: extrapolar linearmente com step de fator_diversificacao = 0.56 por cliente adicional. Demanda = 2.22 * (fator_diversificacao)",
+    "tabela": [
+      {
+        "n_clientes": 1,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 3.88,
+        "demanda_kva": 8.6136
+      },
+      {
+        "n_clientes": 2,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 3.88,
+        "demanda_kva": 8.6136
+      },
+      {
+        "n_clientes": 3,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 3.88,
+        "demanda_kva": 8.6136
+      },
+      {
+        "n_clientes": 4,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 3.88,
+        "demanda_kva": 8.6136
+      },
+      {
+        "n_clientes": 5,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 4.84,
+        "demanda_kva": 10.7448
+      },
+      {
+        "n_clientes": 6,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 5.8,
+        "demanda_kva": 12.876
+      },
+      {
+        "n_clientes": 7,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 6.76,
+        "demanda_kva": 15.0072
+      },
+      {
+        "n_clientes": 8,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 7.72,
+        "demanda_kva": 17.1384
+      },
+      {
+        "n_clientes": 9,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 8.68,
+        "demanda_kva": 19.2696
+      },
+      {
+        "n_clientes": 10,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 9.64,
+        "demanda_kva": 21.4008
+      },
+      {
+        "n_clientes": 11,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 10.42,
+        "demanda_kva": 23.1324
+      },
+      {
+        "n_clientes": 12,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 11.2,
+        "demanda_kva": 24.864
+      },
+      {
+        "n_clientes": 13,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 11.98,
+        "demanda_kva": 26.5956
+      },
+      {
+        "n_clientes": 14,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 12.76,
+        "demanda_kva": 28.3272
+      },
+      {
+        "n_clientes": 15,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 13.54,
+        "demanda_kva": 30.0588
+      },
+      {
+        "n_clientes": 16,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 14.32,
+        "demanda_kva": 31.7904
+      },
+      {
+        "n_clientes": 17,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 15.1,
+        "demanda_kva": 33.522
+      },
+      {
+        "n_clientes": 18,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 15.88,
+        "demanda_kva": 35.2536
+      },
+      {
+        "n_clientes": 19,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 16.66,
+        "demanda_kva": 36.9852
+      },
+      {
+        "n_clientes": 20,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 17.44,
+        "demanda_kva": 38.7168
+      },
+      {
+        "n_clientes": 21,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 18.05,
+        "demanda_kva": 40.071
+      },
+      {
+        "n_clientes": 22,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 18.66,
+        "demanda_kva": 41.4252
+      },
+      {
+        "n_clientes": 23,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 19.27,
+        "demanda_kva": 42.7794
+      },
+      {
+        "n_clientes": 24,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 19.88,
+        "demanda_kva": 44.1336
+      },
+      {
+        "n_clientes": 25,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 20.49,
+        "demanda_kva": 45.4878
+      },
+      {
+        "n_clientes": 26,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 21.1,
+        "demanda_kva": 46.842
+      },
+      {
+        "n_clientes": 27,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 21.71,
+        "demanda_kva": 48.1962
+      },
+      {
+        "n_clientes": 28,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 22.32,
+        "demanda_kva": 49.5504
+      },
+      {
+        "n_clientes": 29,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 22.93,
+        "demanda_kva": 50.9046
+      },
+      {
+        "n_clientes": 30,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 23.54,
+        "demanda_kva": 52.2588
+      },
+      {
+        "n_clientes": 31,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 24.14,
+        "demanda_kva": 53.5908
+      },
+      {
+        "n_clientes": 32,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 24.74,
+        "demanda_kva": 54.9228
+      },
+      {
+        "n_clientes": 33,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 25.34,
+        "demanda_kva": 56.2548
+      },
+      {
+        "n_clientes": 34,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 25.94,
+        "demanda_kva": 57.5868
+      },
+      {
+        "n_clientes": 35,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 26.54,
+        "demanda_kva": 58.9188
+      },
+      {
+        "n_clientes": 36,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 27.14,
+        "demanda_kva": 60.2508
+      },
+      {
+        "n_clientes": 37,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 27.74,
+        "demanda_kva": 61.5828
+      },
+      {
+        "n_clientes": 38,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 28.34,
+        "demanda_kva": 62.9148
+      },
+      {
+        "n_clientes": 39,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 28.94,
+        "demanda_kva": 64.2468
+      },
+      {
+        "n_clientes": 40,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 29.54,
+        "demanda_kva": 65.5788
+      },
+      {
+        "n_clientes": 41,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 30.14,
+        "demanda_kva": 66.9108
+      },
+      {
+        "n_clientes": 42,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 30.74,
+        "demanda_kva": 68.2428
+      },
+      {
+        "n_clientes": 43,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 31.34,
+        "demanda_kva": 69.5748
+      },
+      {
+        "n_clientes": 44,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 31.94,
+        "demanda_kva": 70.9068
+      },
+      {
+        "n_clientes": 45,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 32.54,
+        "demanda_kva": 72.2388
+      },
+      {
+        "n_clientes": 46,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 33.1,
+        "demanda_kva": 73.482
+      },
+      {
+        "n_clientes": 47,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 33.66,
+        "demanda_kva": 74.7252
+      },
+      {
+        "n_clientes": 48,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 34.22,
+        "demanda_kva": 75.9684
+      },
+      {
+        "n_clientes": 49,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 34.78,
+        "demanda_kva": 77.2116
+      },
+      {
+        "n_clientes": 50,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 35.34,
+        "demanda_kva": 78.4548
+      },
+      {
+        "n_clientes": 51,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 35.9,
+        "demanda_kva": 79.698
+      },
+      {
+        "n_clientes": 52,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 36.46,
+        "demanda_kva": 80.9412
+      },
+      {
+        "n_clientes": 53,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 37.02,
+        "demanda_kva": 82.1844
+      },
+      {
+        "n_clientes": 54,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 37.58,
+        "demanda_kva": 83.4276
+      },
+      {
+        "n_clientes": 55,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 38.14,
+        "demanda_kva": 84.6708
+      },
+      {
+        "n_clientes": 56,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 38.7,
+        "demanda_kva": 85.914
+      },
+      {
+        "n_clientes": 57,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 39.26,
+        "demanda_kva": 87.1572
+      },
+      {
+        "n_clientes": 58,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 39.82,
+        "demanda_kva": 88.4004
+      },
+      {
+        "n_clientes": 59,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 40.38,
+        "demanda_kva": 89.6436
+      },
+      {
+        "n_clientes": 60,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 40.94,
+        "demanda_kva": 90.8868
+      },
+      {
+        "n_clientes": 61,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 41.5,
+        "demanda_kva": 92.13
+      },
+      {
+        "n_clientes": 62,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 42.06,
+        "demanda_kva": 93.3732
+      },
+      {
+        "n_clientes": 63,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 42.62,
+        "demanda_kva": 94.6164
+      },
+      {
+        "n_clientes": 64,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 43.18,
+        "demanda_kva": 95.8596
+      },
+      {
+        "n_clientes": 65,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 43.74,
+        "demanda_kva": 97.1028
+      },
+      {
+        "n_clientes": 66,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 44.3,
+        "demanda_kva": 98.346
+      },
+      {
+        "n_clientes": 67,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 44.86,
+        "demanda_kva": 99.5892
+      },
+      {
+        "n_clientes": 68,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 45.42,
+        "demanda_kva": 100.8324
+      },
+      {
+        "n_clientes": 69,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 45.98,
+        "demanda_kva": 102.0756
+      },
+      {
+        "n_clientes": 70,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 46.54,
+        "demanda_kva": 103.3188
+      },
+      {
+        "n_clientes": 71,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 47.1,
+        "demanda_kva": 104.562
+      },
+      {
+        "n_clientes": 72,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 47.66,
+        "demanda_kva": 105.8052
+      },
+      {
+        "n_clientes": 73,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 48.22,
+        "demanda_kva": 107.0484
+      },
+      {
+        "n_clientes": 74,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 48.78,
+        "demanda_kva": 108.2916
+      },
+      {
+        "n_clientes": 75,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 49.34,
+        "demanda_kva": 109.5348
+      },
+      {
+        "n_clientes": 76,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 49.9,
+        "demanda_kva": 110.778
+      },
+      {
+        "n_clientes": 77,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 50.46,
+        "demanda_kva": 112.0212
+      },
+      {
+        "n_clientes": 78,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 51.02,
+        "demanda_kva": 113.2644
+      },
+      {
+        "n_clientes": 79,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 51.58,
+        "demanda_kva": 114.5076
+      },
+      {
+        "n_clientes": 80,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 52.14,
+        "demanda_kva": 115.7508
+      },
+      {
+        "n_clientes": 81,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 52.7,
+        "demanda_kva": 116.994
+      },
+      {
+        "n_clientes": 82,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 53.26,
+        "demanda_kva": 118.2372
+      },
+      {
+        "n_clientes": 83,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 53.82,
+        "demanda_kva": 119.4804
+      },
+      {
+        "n_clientes": 84,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 54.38,
+        "demanda_kva": 120.7236
+      },
+      {
+        "n_clientes": 85,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 54.94,
+        "demanda_kva": 121.9668
+      },
+      {
+        "n_clientes": 86,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 55.5,
+        "demanda_kva": 123.21
+      },
+      {
+        "n_clientes": 87,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 56.06,
+        "demanda_kva": 124.4532
+      },
+      {
+        "n_clientes": 88,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 56.62,
+        "demanda_kva": 125.6964
+      },
+      {
+        "n_clientes": 89,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 57.18,
+        "demanda_kva": 126.9396
+      },
+      {
+        "n_clientes": 90,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 57.74,
+        "demanda_kva": 128.1828
+      },
+      {
+        "n_clientes": 91,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 58.3,
+        "demanda_kva": 129.426
+      },
+      {
+        "n_clientes": 92,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 58.86,
+        "demanda_kva": 130.6692
+      },
+      {
+        "n_clientes": 93,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 59.42,
+        "demanda_kva": 131.9124
+      },
+      {
+        "n_clientes": 94,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 59.98,
+        "demanda_kva": 133.1556
+      },
+      {
+        "n_clientes": 95,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 60.54,
+        "demanda_kva": 134.3988
+      },
+      {
+        "n_clientes": 96,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 61.1,
+        "demanda_kva": 135.642
+      },
+      {
+        "n_clientes": 97,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 61.66,
+        "demanda_kva": 136.8852
+      },
+      {
+        "n_clientes": 98,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 62.22,
+        "demanda_kva": 138.1284
+      },
+      {
+        "n_clientes": 99,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 62.78,
+        "demanda_kva": 139.3716
+      },
+      {
+        "n_clientes": 100,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 63.34,
+        "demanda_kva": 140.6148
+      },
+      {
+        "n_clientes": 101,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 63.59,
+        "demanda_kva": 141.1698
+      },
+      {
+        "n_clientes": 102,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 63.84,
+        "demanda_kva": 141.7248
+      },
+      {
+        "n_clientes": 103,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 64.09,
+        "demanda_kva": 142.2798
+      },
+      {
+        "n_clientes": 104,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 64.34,
+        "demanda_kva": 142.8348
+      },
+      {
+        "n_clientes": 105,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 64.59,
+        "demanda_kva": 143.3898
+      },
+      {
+        "n_clientes": 106,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 64.84,
+        "demanda_kva": 143.9448
+      },
+      {
+        "n_clientes": 107,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 65.09,
+        "demanda_kva": 144.4998
+      },
+      {
+        "n_clientes": 108,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 65.34,
+        "demanda_kva": 145.0548
+      },
+      {
+        "n_clientes": 109,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 65.59,
+        "demanda_kva": 145.6098
+      },
+      {
+        "n_clientes": 110,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 65.84,
+        "demanda_kva": 146.1648
+      },
+      {
+        "n_clientes": 111,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 66.09,
+        "demanda_kva": 146.7198
+      },
+      {
+        "n_clientes": 112,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 66.34,
+        "demanda_kva": 147.2748
+      },
+      {
+        "n_clientes": 113,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 66.59,
+        "demanda_kva": 147.8298
+      },
+      {
+        "n_clientes": 114,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 66.84,
+        "demanda_kva": 148.3848
+      },
+      {
+        "n_clientes": 115,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 67.09,
+        "demanda_kva": 148.9398
+      },
+      {
+        "n_clientes": 116,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 67.34,
+        "demanda_kva": 149.4948
+      },
+      {
+        "n_clientes": 117,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 67.59,
+        "demanda_kva": 150.0498
+      },
+      {
+        "n_clientes": 118,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 67.84,
+        "demanda_kva": 150.6048
+      },
+      {
+        "n_clientes": 119,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 68.09,
+        "demanda_kva": 151.1598
+      },
+      {
+        "n_clientes": 120,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 68.34,
+        "demanda_kva": 151.7148
+      },
+      {
+        "n_clientes": 121,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 68.59,
+        "demanda_kva": 152.2698
+      },
+      {
+        "n_clientes": 122,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 68.84,
+        "demanda_kva": 152.8248
+      },
+      {
+        "n_clientes": 123,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 69.09,
+        "demanda_kva": 153.3798
+      },
+      {
+        "n_clientes": 124,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 69.34,
+        "demanda_kva": 153.9348
+      },
+      {
+        "n_clientes": 125,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 69.59,
+        "demanda_kva": 154.4898
+      },
+      {
+        "n_clientes": 126,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 69.79,
+        "demanda_kva": 154.9338
+      },
+      {
+        "n_clientes": 127,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 69.99,
+        "demanda_kva": 155.3778
+      },
+      {
+        "n_clientes": 128,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 70.19,
+        "demanda_kva": 155.8218
+      },
+      {
+        "n_clientes": 129,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 70.39,
+        "demanda_kva": 156.2658
+      },
+      {
+        "n_clientes": 130,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 70.59,
+        "demanda_kva": 156.7098
+      },
+      {
+        "n_clientes": 131,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 70.79,
+        "demanda_kva": 157.1538
+      },
+      {
+        "n_clientes": 132,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 70.99,
+        "demanda_kva": 157.5978
+      },
+      {
+        "n_clientes": 133,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 71.19,
+        "demanda_kva": 158.0418
+      },
+      {
+        "n_clientes": 134,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 71.39,
+        "demanda_kva": 158.4858
+      },
+      {
+        "n_clientes": 135,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 71.59,
+        "demanda_kva": 158.9298
+      },
+      {
+        "n_clientes": 136,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 71.79,
+        "demanda_kva": 159.3738
+      },
+      {
+        "n_clientes": 137,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 71.99,
+        "demanda_kva": 159.8178
+      },
+      {
+        "n_clientes": 138,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 72.19,
+        "demanda_kva": 160.2618
+      },
+      {
+        "n_clientes": 139,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 72.39,
+        "demanda_kva": 160.7058
+      },
+      {
+        "n_clientes": 140,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 72.59,
+        "demanda_kva": 161.1498
+      },
+      {
+        "n_clientes": 141,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 72.79,
+        "demanda_kva": 161.5938
+      },
+      {
+        "n_clientes": 142,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 72.99,
+        "demanda_kva": 162.0378
+      },
+      {
+        "n_clientes": 143,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 73.19,
+        "demanda_kva": 162.4818
+      },
+      {
+        "n_clientes": 144,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 73.39,
+        "demanda_kva": 162.9258
+      },
+      {
+        "n_clientes": 145,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 73.59,
+        "demanda_kva": 163.3698
+      },
+      {
+        "n_clientes": 146,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 73.79,
+        "demanda_kva": 163.8138
+      },
+      {
+        "n_clientes": 147,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 73.99,
+        "demanda_kva": 164.2578
+      },
+      {
+        "n_clientes": 148,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 74.19,
+        "demanda_kva": 164.7018
+      },
+      {
+        "n_clientes": 149,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 74.39,
+        "demanda_kva": 165.1458
+      },
+      {
+        "n_clientes": 150,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 74.59,
+        "demanda_kva": 165.5898
+      },
+      {
+        "n_clientes": 151,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 74.74,
+        "demanda_kva": 165.9228
+      },
+      {
+        "n_clientes": 152,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 74.89,
+        "demanda_kva": 166.2558
+      },
+      {
+        "n_clientes": 153,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 75.04,
+        "demanda_kva": 166.5888
+      },
+      {
+        "n_clientes": 154,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 75.19,
+        "demanda_kva": 166.9218
+      },
+      {
+        "n_clientes": 155,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 75.34,
+        "demanda_kva": 167.2548
+      },
+      {
+        "n_clientes": 156,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 75.49,
+        "demanda_kva": 167.5878
+      },
+      {
+        "n_clientes": 157,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 75.64,
+        "demanda_kva": 167.9208
+      },
+      {
+        "n_clientes": 158,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 75.79,
+        "demanda_kva": 168.2538
+      },
+      {
+        "n_clientes": 159,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 75.94,
+        "demanda_kva": 168.5868
+      },
+      {
+        "n_clientes": 160,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 76.09,
+        "demanda_kva": 168.9198
+      },
+      {
+        "n_clientes": 161,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 76.24,
+        "demanda_kva": 169.2528
+      },
+      {
+        "n_clientes": 162,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 76.39,
+        "demanda_kva": 169.5858
+      },
+      {
+        "n_clientes": 163,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 76.54,
+        "demanda_kva": 169.9188
+      },
+      {
+        "n_clientes": 164,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 76.69,
+        "demanda_kva": 170.2518
+      },
+      {
+        "n_clientes": 165,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 76.84,
+        "demanda_kva": 170.5848
+      },
+      {
+        "n_clientes": 166,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 76.99,
+        "demanda_kva": 170.9178
+      },
+      {
+        "n_clientes": 167,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 77.14,
+        "demanda_kva": 171.2508
+      },
+      {
+        "n_clientes": 168,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 77.29,
+        "demanda_kva": 171.5838
+      },
+      {
+        "n_clientes": 169,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 77.44,
+        "demanda_kva": 171.9168
+      },
+      {
+        "n_clientes": 170,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 77.59,
+        "demanda_kva": 172.2498
+      },
+      {
+        "n_clientes": 171,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 77.74,
+        "demanda_kva": 172.5828
+      },
+      {
+        "n_clientes": 172,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 77.89,
+        "demanda_kva": 172.9158
+      },
+      {
+        "n_clientes": 173,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 78.04,
+        "demanda_kva": 173.2488
+      },
+      {
+        "n_clientes": 174,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 78.19,
+        "demanda_kva": 173.5818
+      },
+      {
+        "n_clientes": 175,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 78.34,
+        "demanda_kva": 173.9148
+      },
+      {
+        "n_clientes": 176,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 78.44,
+        "demanda_kva": 174.1368
+      },
+      {
+        "n_clientes": 177,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 78.54,
+        "demanda_kva": 174.3588
+      },
+      {
+        "n_clientes": 178,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 78.64,
+        "demanda_kva": 174.5808
+      },
+      {
+        "n_clientes": 179,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 78.74,
+        "demanda_kva": 174.8028
+      },
+      {
+        "n_clientes": 180,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 78.84,
+        "demanda_kva": 175.0248
+      },
+      {
+        "n_clientes": 181,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 78.94,
+        "demanda_kva": 175.2468
+      },
+      {
+        "n_clientes": 182,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 79.04,
+        "demanda_kva": 175.4688
+      },
+      {
+        "n_clientes": 183,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 79.14,
+        "demanda_kva": 175.6908
+      },
+      {
+        "n_clientes": 184,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 79.24,
+        "demanda_kva": 175.9128
+      },
+      {
+        "n_clientes": 185,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 79.34,
+        "demanda_kva": 176.1348
+      },
+      {
+        "n_clientes": 186,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 79.44,
+        "demanda_kva": 176.3568
+      },
+      {
+        "n_clientes": 187,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 79.54,
+        "demanda_kva": 176.5788
+      },
+      {
+        "n_clientes": 188,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 79.64,
+        "demanda_kva": 176.8008
+      },
+      {
+        "n_clientes": 189,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 79.74,
+        "demanda_kva": 177.0228
+      },
+      {
+        "n_clientes": 190,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 79.84,
+        "demanda_kva": 177.2448
+      },
+      {
+        "n_clientes": 191,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 79.94,
+        "demanda_kva": 177.4668
+      },
+      {
+        "n_clientes": 192,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.04,
+        "demanda_kva": 177.6888
+      },
+      {
+        "n_clientes": 193,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.14,
+        "demanda_kva": 177.9108
+      },
+      {
+        "n_clientes": 194,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.24,
+        "demanda_kva": 178.1328
+      },
+      {
+        "n_clientes": 195,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.34,
+        "demanda_kva": 178.3548
+      },
+      {
+        "n_clientes": 196,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.44,
+        "demanda_kva": 178.5768
+      },
+      {
+        "n_clientes": 197,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.54,
+        "demanda_kva": 178.7988
+      },
+      {
+        "n_clientes": 198,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.64,
+        "demanda_kva": 179.0208
+      },
+      {
+        "n_clientes": 199,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.74,
+        "demanda_kva": 179.2428
+      },
+      {
+        "n_clientes": 200,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.84,
+        "demanda_kva": 179.4648
+      },
+      {
+        "n_clientes": 201,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.89,
+        "demanda_kva": 179.5758
+      },
+      {
+        "n_clientes": 202,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.94,
+        "demanda_kva": 179.6868
+      },
+      {
+        "n_clientes": 203,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 80.99,
+        "demanda_kva": 179.7978
+      },
+      {
+        "n_clientes": 204,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.04,
+        "demanda_kva": 179.9088
+      },
+      {
+        "n_clientes": 205,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.09,
+        "demanda_kva": 180.0198
+      },
+      {
+        "n_clientes": 206,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.14,
+        "demanda_kva": 180.1308
+      },
+      {
+        "n_clientes": 207,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.19,
+        "demanda_kva": 180.2418
+      },
+      {
+        "n_clientes": 208,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.24,
+        "demanda_kva": 180.3528
+      },
+      {
+        "n_clientes": 209,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.29,
+        "demanda_kva": 180.4638
+      },
+      {
+        "n_clientes": 210,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.34,
+        "demanda_kva": 180.5748
+      },
+      {
+        "n_clientes": 211,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.39,
+        "demanda_kva": 180.6858
+      },
+      {
+        "n_clientes": 212,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.44,
+        "demanda_kva": 180.7968
+      },
+      {
+        "n_clientes": 213,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.49,
+        "demanda_kva": 180.9078
+      },
+      {
+        "n_clientes": 214,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.54,
+        "demanda_kva": 181.0188
+      },
+      {
+        "n_clientes": 215,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.59,
+        "demanda_kva": 181.1298
+      },
+      {
+        "n_clientes": 216,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.64,
+        "demanda_kva": 181.2408
+      },
+      {
+        "n_clientes": 217,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.69,
+        "demanda_kva": 181.3518
+      },
+      {
+        "n_clientes": 218,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.74,
+        "demanda_kva": 181.4628
+      },
+      {
+        "n_clientes": 219,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.79,
+        "demanda_kva": 181.5738
+      },
+      {
+        "n_clientes": 220,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.84,
+        "demanda_kva": 181.6848
+      },
+      {
+        "n_clientes": 221,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.89,
+        "demanda_kva": 181.7958
+      },
+      {
+        "n_clientes": 222,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.94,
+        "demanda_kva": 181.9068
+      },
+      {
+        "n_clientes": 223,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 81.99,
+        "demanda_kva": 182.0178
+      },
+      {
+        "n_clientes": 224,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.04,
+        "demanda_kva": 182.1288
+      },
+      {
+        "n_clientes": 225,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.09,
+        "demanda_kva": 182.2398
+      },
+      {
+        "n_clientes": 226,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.12,
+        "demanda_kva": 182.3064
+      },
+      {
+        "n_clientes": 227,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.15,
+        "demanda_kva": 182.373
+      },
+      {
+        "n_clientes": 228,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.18,
+        "demanda_kva": 182.4396
+      },
+      {
+        "n_clientes": 229,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.21,
+        "demanda_kva": 182.5062
+      },
+      {
+        "n_clientes": 230,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.24,
+        "demanda_kva": 182.5728
+      },
+      {
+        "n_clientes": 231,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.27,
+        "demanda_kva": 182.6394
+      },
+      {
+        "n_clientes": 232,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.3,
+        "demanda_kva": 182.706
+      },
+      {
+        "n_clientes": 233,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.33,
+        "demanda_kva": 182.7726
+      },
+      {
+        "n_clientes": 234,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.36,
+        "demanda_kva": 182.8392
+      },
+      {
+        "n_clientes": 235,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.39,
+        "demanda_kva": 182.9058
+      },
+      {
+        "n_clientes": 236,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.42,
+        "demanda_kva": 182.9724
+      },
+      {
+        "n_clientes": 237,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.45,
+        "demanda_kva": 183.039
+      },
+      {
+        "n_clientes": 238,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.48,
+        "demanda_kva": 183.1056
+      },
+      {
+        "n_clientes": 239,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.5,
+        "demanda_kva": 183.15
+      },
+      {
+        "n_clientes": 240,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.52,
+        "demanda_kva": 183.1944
+      },
+      {
+        "n_clientes": 241,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.54,
+        "demanda_kva": 183.2388
+      },
+      {
+        "n_clientes": 242,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.56,
+        "demanda_kva": 183.2832
+      },
+      {
+        "n_clientes": 243,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.58,
+        "demanda_kva": 183.3276
+      },
+      {
+        "n_clientes": 244,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.6,
+        "demanda_kva": 183.372
+      },
+      {
+        "n_clientes": 245,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.62,
+        "demanda_kva": 183.4164
+      },
+      {
+        "n_clientes": 246,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.64,
+        "demanda_kva": 183.4608
+      },
+      {
+        "n_clientes": 247,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.66,
+        "demanda_kva": 183.5052
+      },
+      {
+        "n_clientes": 248,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.68,
+        "demanda_kva": 183.5496
+      },
+      {
+        "n_clientes": 249,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.7,
+        "demanda_kva": 183.594
+      },
+      {
+        "n_clientes": 250,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.72,
+        "demanda_kva": 183.6384
+      },
+      {
+        "n_clientes": 251,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.73,
+        "demanda_kva": 183.6606
+      },
+      {
+        "n_clientes": 252,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.74,
+        "demanda_kva": 183.6828
+      },
+      {
+        "n_clientes": 253,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.75,
+        "demanda_kva": 183.705
+      },
+      {
+        "n_clientes": 254,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.76,
+        "demanda_kva": 183.7272
+      },
+      {
+        "n_clientes": 255,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.77,
+        "demanda_kva": 183.7494
+      },
+      {
+        "n_clientes": 256,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.78,
+        "demanda_kva": 183.7716
+      },
+      {
+        "n_clientes": 257,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.79,
+        "demanda_kva": 183.7938
+      },
+      {
+        "n_clientes": 258,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.8,
+        "demanda_kva": 183.816
+      },
+      {
+        "n_clientes": 259,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.81,
+        "demanda_kva": 183.8382
+      },
+      {
+        "n_clientes": 260,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.82,
+        "demanda_kva": 183.8604
+      },
+      {
+        "n_clientes": 261,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.83,
+        "demanda_kva": 183.8826
+      },
+      {
+        "n_clientes": 262,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.84,
+        "demanda_kva": 183.9048
+      },
+      {
+        "n_clientes": 263,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.85,
+        "demanda_kva": 183.927
+      },
+      {
+        "n_clientes": 264,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.86,
+        "demanda_kva": 183.9492
+      },
+      {
+        "n_clientes": 265,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.87,
+        "demanda_kva": 183.9714
+      },
+      {
+        "n_clientes": 266,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.88,
+        "demanda_kva": 183.9936
+      },
+      {
+        "n_clientes": 267,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.89,
+        "demanda_kva": 184.0158
+      },
+      {
+        "n_clientes": 268,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.9,
+        "demanda_kva": 184.038
+      },
+      {
+        "n_clientes": 269,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.91,
+        "demanda_kva": 184.0602
+      },
+      {
+        "n_clientes": 270,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.92,
+        "demanda_kva": 184.0824
+      },
+      {
+        "n_clientes": 271,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.93,
+        "demanda_kva": 184.1046
+      },
+      {
+        "n_clientes": 272,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.94,
+        "demanda_kva": 184.1268
+      },
+      {
+        "n_clientes": 273,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.95,
+        "demanda_kva": 184.149
+      },
+      {
+        "n_clientes": 274,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.96,
+        "demanda_kva": 184.1712
+      },
+      {
+        "n_clientes": 275,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.97,
+        "demanda_kva": 184.1934
+      },
+      {
+        "n_clientes": 276,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.98,
+        "demanda_kva": 184.2156
+      },
+      {
+        "n_clientes": 277,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 82.99,
+        "demanda_kva": 184.2378
+      },
+      {
+        "n_clientes": 278,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 279,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 280,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 281,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 282,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 283,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 284,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 285,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 286,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 287,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 288,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 289,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 290,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 291,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 292,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 293,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 294,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 295,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 296,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 297,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 298,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 299,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      },
+      {
+        "n_clientes": 300,
+        "kva_por_cliente": 2.22,
+        "fator_diversificacao": 83.0,
+        "demanda_kva": 184.26
+      }
+    ]
+  },
+  "fatores_por_classe_consumidor": {
+    "Comercial": {
+      "label_planilha": "Comercial",
+      "coeficientes_qdt_por_condutor": {
+        "5": 1.13926612,
+        "8": 1.05170292,
+        "13": 0.7951944,
+        "21": 0.7191797999999999,
+        "33": 0.43047924000000004,
+        "53": 0.43047924000000004,
+        "67": 0.28863348,
+        "85": 0.28863348,
+        "107": 0.63354848,
+        "127": 0.42267772,
+        "253": 0.3495622,
+        "6 AWG": 0.24472204
+      },
+      "nota": "Coeficiente acumulado: QDT_total% = Coef × I × (L/1000) para cada condutor"
+    },
+    "Residencial": {
+      "label_planilha": "Residencial",
+      "coeficientes_qdt_por_condutor": {
+        "5": 1.16172648,
+        "8": 1.08087118,
+        "13": 0.7862750999999999,
+        "21": 0.7143166999999999,
+        "33": 0.39903596,
+        "53": 0.39903596,
+        "67": 0.24830192,
+        "85": 0.24830192,
+        "107": 0.67182442,
+        "127": 0.43703037999999994,
+        "253": 0.3550088,
+        "6 AWG": 0.24093216
+      },
+      "nota": "Coeficiente acumulado: QDT_total% = Coef × I × (L/1000) para cada condutor"
+    },
+    "Misto": {
+      "label_planilha": "Misto",
+      "coeficientes_qdt_por_condutor": {
+        "5": 1.15711206,
+        "8": 1.0718942100000002,
+        "13": 0.79681095,
+        "21": 0.72205365,
+        "33": 0.41962512,
+        "53": 0.41962512,
+        "67": 0.27287274,
+        "85": 0.27287274,
+        "107": 0.6548364900000001,
+        "127": 0.43195161,
+        "253": 0.3544011,
+        "6 AWG": 0.24475902
+      },
+      "nota": "Coeficiente acumulado: QDT_total% = Coef × I × (L/1000) para cada condutor"
+    }
+  }
+}
