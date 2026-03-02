@@ -45,12 +45,12 @@ def get_project(project_id: int, repo: ProjectRepository = Depends(get_repositor
 def add_project_node(project_id: int, node_in: ProjectNodeCreate, repo: ProjectRepository = Depends(get_repository)):
     if node_in.project_id != project_id:
         raise HTTPException(status_code=400, detail="ID divergente da rota")
-    domain_node = DomainProjectNode(**node_in.dict())
+    domain_node = DomainProjectNode(**node_in.model_dump())
     return repo.add_node(domain_node)
 
 @router.post("/{project_id}/edges", response_model=NodeSpanResponse)
 def add_node_span(project_id: int, span_in: NodeSpanCreate, repo: ProjectRepository = Depends(get_repository)):
-    domain_span = DomainNodeSpanConfig(**span_in.dict())
+    domain_span = DomainNodeSpanConfig(**span_in.model_dump())
     return repo.add_span_config(domain_span)
 
 @router.patch("/{project_id}/nodes/{node_id}/position", response_model=ProjectNodeResponse)
@@ -173,7 +173,7 @@ def save_project_canvas(
 ):
     """Salva o estado completo do React Flow (nós, arestas e viewport) no projeto."""
     # Convertemos o payload para dict para o repositório serializar
-    canvas_dict = payload.dict()
+    canvas_dict = payload.model_dump()
     success = repo.save_canvas_state(project_id, canvas_dict)
     if not success:
         raise HTTPException(status_code=404, detail="Projeto não encontrado")

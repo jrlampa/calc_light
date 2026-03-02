@@ -1,5 +1,5 @@
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class ProjectBase(BaseModel):
@@ -118,8 +118,7 @@ class CanvasStateSave(BaseModel):
     edges: list[dict]
     viewport: dict | None = None
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class CanvasStateResponse(BaseModel):
