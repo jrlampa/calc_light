@@ -275,7 +275,7 @@ export default function TopologyCanvas({ projectId }: { projectId: number }) {
     );
 
     const onConnectStart = useCallback(
-        (_: React.MouseEvent | React.TouchEvent, params: OnConnectStartParams) => {
+        (_: MouseEvent | TouchEvent, params: OnConnectStartParams) => {
             connectSourceRef.current = params.nodeId ?? null;
         },
         []

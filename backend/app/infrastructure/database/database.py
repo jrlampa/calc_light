@@ -18,6 +18,51 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
     Adicione novas colunas aqui em vez de recriar o banco.
     """
     migrations = [
+        # ── Schema base — tabelas criadas na primeira execução ────────────────
+        """CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )""",
+        """CREATE TABLE IF NOT EXISTS project_nodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            pole_id INTEGER,
+            label TEXT,
+            pos_x REAL,
+            pos_y REAL,
+            effort_dan REAL
+        )""",
+        """CREATE TABLE IF NOT EXISTS node_span_configs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_node_id INTEGER NOT NULL,
+            target_node_id INTEGER NOT NULL,
+            mt_conductor_id INTEGER,
+            mt_sag_m REAL DEFAULT 0.0,
+            bt_conductor_id INTEGER,
+            bt_sag_m REAL DEFAULT 0.0,
+            span_length_m REAL DEFAULT 0.0,
+            angle_deg REAL DEFAULT 0.0
+        )""",
+        """CREATE TABLE IF NOT EXISTS conductors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            diameter_m REAL,
+            weight_kg_m REAL,
+            cable_qty INTEGER,
+            network_type TEXT,
+            messenger_weight REAL,
+            messenger_diameter REAL
+        )""",
+        """CREATE TABLE IF NOT EXISTS poles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type_name TEXT,
+            height_m REAL,
+            resistance_dan REAL,
+            weight_parameter_x REAL
+        )""",
+        # ── Migrações incrementais ────────────────────────────────────────────
         # Fase 16.1 — Nó Fantasma (Ghost Node)
         "ALTER TABLE project_nodes ADD COLUMN is_ghost INTEGER DEFAULT 0",
         # Fase 19 — Catálogo de Equipamentos e Arrasto Adicional

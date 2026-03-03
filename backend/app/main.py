@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,13 +8,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers import calculations, catalogs, forces, gis, projects, solver, topology
 from app.api.routers.cqt_network import router_v1 as cqt_network_router
 from app.api.routers.reports import router as reports_router  # Fase 24: Memorial PDF
+from app.infrastructure.database.database import get_db_connection
 
 APP_VERSION = "0.24.0"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Inicializa o banco de dados (cria tabelas e aplica migrações) na subida."""
+    conn = get_db_connection()
+    conn.close()
+    yield
+
 
 app = FastAPI(
     title="CACL LIGHT API",
     description="API para cálculo de esforço mecânico em postes de distribuição (padrão Light).",
     version=APP_VERSION,
+    lifespan=lifespan,
 )
 
 # Origins permitidas: lidas de variável de ambiente em produção,

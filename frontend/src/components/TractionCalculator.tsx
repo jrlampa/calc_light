@@ -5,7 +5,6 @@ import { Link2, MapPin, Package, Plus } from 'lucide-react';
 import { useUIStore } from '../store';
 import { useCatalogs } from '../hooks/useCatalogs';
 import {
-    useNodeEquipment,
     useProjectNodes,
     useProjectSettings,
     useSaveNode,
