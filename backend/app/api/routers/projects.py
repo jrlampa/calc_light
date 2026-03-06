@@ -8,8 +8,8 @@ from app.domain.models import Project as DomainProject
 from app.domain.models import ProjectNode as DomainProjectNode
 from app.infrastructure.database.repository import ProjectRepository
 from app.schemas.projects import (
-    CanvasStateSave,
     CanvasStateResponse,
+    CanvasStateSave,
     NodeEquipmentUpdate,
     NodeGhostUpdate,
     NodePositionUpdate,
@@ -177,7 +177,7 @@ def save_project_canvas(
     success = repo.save_canvas_state(project_id, canvas_dict)
     if not success:
         raise HTTPException(status_code=404, detail="Projeto não encontrado")
-    
+
     return CanvasStateResponse(
         project_id=project_id,
         has_canvas=True,
@@ -196,7 +196,7 @@ def get_project_canvas(
     canvas = repo.get_canvas_state(project_id)
     if canvas is None:
         raise HTTPException(status_code=404, detail="Projeto não encontrado")
-    
+
     has_canvas = bool(canvas)
     # Reconstituir o schema de resposta com o que veio do JSON
     return CanvasStateResponse(

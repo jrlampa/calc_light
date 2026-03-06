@@ -38,7 +38,7 @@ export async function calculateNetwork(payload: object) {
 }
 
 // ── Canvas Persistence (Fase 23) ──
-export async function saveCanvas(projectId: number, payload: { nodes: any[]; edges: any[] }) {
+export async function saveCanvas(projectId: number, payload: { nodes: object[]; edges: object[] }) {
     const response = await api.put(`/projects/${projectId}/canvas`, payload);
     return response.data;
 }

@@ -17,15 +17,14 @@ Cenários cobertos por formato:
 from __future__ import annotations
 
 import io
-import zipfile
 import xml.etree.ElementTree as ET
+import zipfile
 from unittest.mock import MagicMock, patch
 
 import openpyxl
 import pytest
 
 from app.domain.gis_parser import (
-    ParsedPoint,
     _find_col,
     _kml_coords_to_latlon,
     _parse_kml_tree,
@@ -35,7 +34,6 @@ from app.domain.gis_parser import (
     parse_kml,
     parse_kmz,
 )
-
 
 # ─── Helpers de fixture ───────────────────────────────────────────────────────
 

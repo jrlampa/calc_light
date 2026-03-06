@@ -7,9 +7,9 @@ Fluxo (Smart Backend):
 """
 from fastapi import APIRouter, HTTPException
 
-from app.domain.electrical_models import GraphPayloadSchema, CqtOutputSchema
-from app.domain.topology_parser import TopologyParser, TopologyError
+from app.domain.electrical_models import CqtOutputSchema, GraphPayloadSchema
 from app.domain.electrical_services import LightElectricalService
+from app.domain.topology_parser import TopologyError, TopologyParser
 
 router_v1 = APIRouter(prefix="/api/v1", tags=["CQT Network"])
 

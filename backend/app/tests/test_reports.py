@@ -12,7 +12,7 @@ import json
 import os
 import sqlite3
 import tempfile
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -25,7 +25,6 @@ from app.domain.electrical_models import (
 )
 from app.infrastructure.database.repository import ProjectRepository
 from app.main import app
-
 
 # ── Fixture: Banco de Dados em Tempfile ─────────────────────────────────────
 

@@ -1,5 +1,6 @@
+
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional
+
 
 class RamalSchema(BaseModel):
     tipo: str = Field(..., description="Tipo de condutor do ramal")
@@ -14,8 +15,8 @@ class PosteSchema(BaseModel):
     condutor: str = Field(..., description="Condutor principal do trecho")
     comprimento: float = Field(..., ge=0, description="Comprimento do trecho em metros")
     fases: int = Field(..., ge=1, le=3, description="Número de fases")
-    ramais: List[RamalSchema] = Field(default_factory=list)
-    tipo_trecho: Optional[str] = Field("rede", description="Tipo do trecho: rede ou rl (ramal)")
+    ramais: list[RamalSchema] = Field(default_factory=list)
+    tipo_trecho: str | None = Field("rede", description="Tipo do trecho: rede ou rl (ramal)")
 
     @field_validator('condutor', 'id')
     def clean_strings(cls, v):
@@ -26,8 +27,8 @@ class CqtInputSchema(BaseModel):
     leitura_trafo: float = Field(0.0, ge=0, description="Leitura de corrente ou kVA no trafo")
     trafo_nominal_kva: float = Field(112.5, gt=0, description="Potência nominal do transformador")
     growth_margin_pct: float = Field(0.15, ge=0, lt=1, description="Margem de crescimento (ex: 0.15 = 15%)")
-    lado_1: List[PosteSchema] = Field(default_factory=list)
-    lado_2: List[PosteSchema] = Field(default_factory=list)
+    lado_1: list[PosteSchema] = Field(default_factory=list)
+    lado_2: list[PosteSchema] = Field(default_factory=list)
 
 class TrechoResultSchema(BaseModel):
     id: str
@@ -42,8 +43,8 @@ class TrechoResultSchema(BaseModel):
     status: str
 
 class CqtOutputSchema(BaseModel):
-    lado_1: List[TrechoResultSchema]
-    lado_2: List[TrechoResultSchema]
+    lado_1: list[TrechoResultSchema]
+    lado_2: list[TrechoResultSchema]
     carga_atual_kva: float
     carga_projetada_kva: float
     trafo_loading_percent: float
@@ -55,7 +56,7 @@ class GraphNodeSchema(BaseModel):
     id: str
     label: str = ""
     is_transformer: bool = False
-    ramais: List[RamalSchema] = Field(default_factory=list)
+    ramais: list[RamalSchema] = Field(default_factory=list)
 
 class GraphEdgeSchema(BaseModel):
     id: str
@@ -64,11 +65,11 @@ class GraphEdgeSchema(BaseModel):
     condutor: str
     comprimento: float = Field(..., ge=0)
     fases: int = Field(..., ge=1, le=3)
-    tipo_trecho: Optional[str] = "rede"
+    tipo_trecho: str | None = "rede"
 
 class GraphPayloadSchema(BaseModel):
     u_nominal: float = Field(127.0, gt=0)
     leitura_trafo: float = Field(0.0, ge=0)
     trafo_nominal_kva: float = Field(112.5, gt=0)
-    nodes: List[GraphNodeSchema]
-    edges: List[GraphEdgeSchema]
+    nodes: list[GraphNodeSchema]
+    edges: list[GraphEdgeSchema]

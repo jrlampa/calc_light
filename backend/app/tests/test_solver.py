@@ -29,13 +29,11 @@ from app.domain.solver import (
     MAX_STRUCTURAL_DAN,
     SAG_EXTREME,
     SAG_STANDARD,
-    SolverReport,
-    run_solver,
     _compute_effort,
+    run_solver,
 )
 from app.infrastructure.database.repository import ProjectRepository
 from app.main import app
-
 
 # ─── Fixtures de Dados ────────────────────────────────────────────────────────
 

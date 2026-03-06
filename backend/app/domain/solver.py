@@ -14,7 +14,6 @@ a flecha dos vãos conectados, reduzindo a tração T = (peso × vão²) / (8 ×
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 
 from .calculators import calculate_level_resultant

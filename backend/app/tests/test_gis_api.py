@@ -20,7 +20,6 @@ from app.api.dependencies import get_db, get_repository
 from app.infrastructure.database.repository import ProjectRepository
 from app.main import app
 
-
 # ─── Schema SQL mínimo para os testes ────────────────────────────────────────
 
 _SCHEMA = """
