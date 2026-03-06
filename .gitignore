@@ -62,6 +62,11 @@ miner_*.py
 paranoid_debug.log
 *.log
 
+# Arquivos de saída de teste e debug
+test_out*.txt
+excel_dump.txt
+cov_*.txt
+
 # Python bytecode (reforço)
 **/__pycache__/
 *.pyc

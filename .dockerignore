@@ -57,6 +57,11 @@ miner_*.py
 *_formulas.txt
 *.log
 
+# Arquivos de saída de teste e debug
+test_out*.txt
+excel_dump.txt
+cov_*.txt
+
 # Root-level scripts and miners (não vão para a imagem)
 light_cqt_core.py
 test_21_8_shadow.py
