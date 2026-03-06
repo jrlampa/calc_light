@@ -67,6 +67,9 @@ test_out*.txt
 excel_dump.txt
 cov_*.txt
 
+# Arquivos temporários do Claude AI
+tmpclaude-*/
+
 # Python bytecode (reforço)
 **/__pycache__/
 *.pyc
