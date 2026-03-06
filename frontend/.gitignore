@@ -16,6 +16,9 @@ dist-ssr
 playwright-report/
 test-results/
 
+# Erros e relatórios temporários
+ts_errors.txt
+
 !.vscode/extensions.json
 .idea
 .DS_Store
