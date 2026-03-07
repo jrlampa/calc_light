@@ -35,7 +35,6 @@ from app.domain.topology_service import build_topology_diagram
 from app.infrastructure.database.repository import ProjectRepository
 from app.main import app
 
-
 # ─── DB Fixture ──────────────────────────────────────────────────────────────
 
 

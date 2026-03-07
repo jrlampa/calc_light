@@ -68,7 +68,33 @@ excel_dump.txt
 cov_*.txt
 
 # Arquivos temporários do Claude AI
-tmpclaude-*/
+tmpclaude-*
+
+# Ambiente Virtual Python (backend)
+backend/.venv/
+
+# Banco de dados local
+*.db
+database/*.db
+
+# Planilhas Excel temporárias (raiz)
+*.xlsm
+*.xlsx
+# Exceto o template de relatório versionado (apenas modelo.xlsm)
+!backend/app/templates/modelo.xlsm
+
+# Scripts temporários de extração e mineração
+extract.py
+extract_full.py
+light_cqt_core.py
+
+# Arquivos de análise e memória de sessão
+MEMORY.md
+21_1_TOPOLOGY_REPORT.txt
+CQT_LOGIC_EXTRACTED.md
+
+# Artefatos de instalação pip
+backend/=*
 
 # Python bytecode (reforço)
 **/__pycache__/

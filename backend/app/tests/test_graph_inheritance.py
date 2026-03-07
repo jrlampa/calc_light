@@ -18,7 +18,6 @@ import pytest
 from app.domain.models import NodeSpanConfig, ProjectNode
 from app.infrastructure.database.repository import ProjectRepository
 
-
 # ─── Fixture: banco de dados mínimo em arquivo temporário ────────────────────
 
 
@@ -114,7 +113,7 @@ class TestImportNodesAtomic:
 
         # Two nodes with the same label → second INSERT violates UNIQUE → rollback
         nodes = [_make_node(label="DUPE"), _make_node(label="DUPE")]
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="."):
             repo.import_nodes_atomic(nodes)
 
         conn = sqlite3.connect(repo.db_path)

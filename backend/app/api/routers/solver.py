@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from app.api.dependencies import get_db, get_repository
 from app.domain.models import Conductor, Pole
-from app.domain.solver import SpanSuggestion, SolverReport, SolverSuggestion, run_solver
+from app.domain.solver import SolverReport, SolverSuggestion, run_solver
 from app.infrastructure.database.repository import ProjectRepository
 
 router = APIRouter(prefix="/projects", tags=["Solver"])

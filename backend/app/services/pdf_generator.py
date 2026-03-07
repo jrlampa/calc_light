@@ -11,10 +11,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from io import BytesIO
-from typing import List
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm, mm
@@ -248,7 +247,7 @@ def _build_trafo_summary(
 # ── Tabela de Trechos ───────────────────────────────────────────────────────
 
 def _build_trecho_table(
-    trechos: List[TrechoResultSchema],
+    trechos: list[TrechoResultSchema],
     lado_label: str,
     section_num: int,
     styles: dict,

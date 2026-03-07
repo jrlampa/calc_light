@@ -28,7 +28,7 @@ TEMPLATE = Path(__file__).parent.parent / "templates" / "modelo.xlsm"
 def _make_poste_data(idx: int) -> dict[str, Any]:
     """Gera um dicionário de dados mínimo para o poste de índice ``idx``."""
     return {
-        "projeto": f"Projeto Teste QA",
+        "projeto": "Projeto Teste QA",
         "ponto": idx,
         "tipo_poste": "Concreto circular",
         "modelo_poste": f"11 m / {idx * 10} daN",

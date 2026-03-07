@@ -56,14 +56,15 @@ function useDebounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: n
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const fnRef = useRef<T>(fn);
     // Keep fnRef up-to-date without resetting the timer
-    fnRef.current = fn;
+    useEffect(() => {
+        fnRef.current = fn;
+    }, [fn]);
     const debounced = useCallback(
         (...args: Parameters<T>) => {
             if (timerRef.current) clearTimeout(timerRef.current);
             timerRef.current = setTimeout(() => fnRef.current(...args), delay);
         },
         // delay is intentionally the only dep — fnRef handles fn updates without creating a new timer
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         [delay]
     );
     return debounced as T;
